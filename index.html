@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ElephantBet — Gestão de Equipamentos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f4f5f8;color:#1a1a2e;font-size:14px;line-height:1.5}
+:root{--eb:#e82e81;--eb-d:#c01f68;--eb-l:#fdeef6;--eb2:#1f3c90;--eb2-d:#162c6e;--eb2-l:#eaeefc;--radius:10px;--border:0.5px solid #dde0ea;--bg:#fff;--bg2:#f6f7fb;--bg3:#edf0f7;--text:#1a1a2e;--text2:#5a5f7a;--text3:#9095b0}
+
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;background:linear-gradient(135deg,#eaeefc 0%,#fdeef6 100%)}
+.login-logo{width:64px;height:64px;border-radius:18px;background:var(--eb);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;letter-spacing:-1px}
+.login-card{background:#fff;border:var(--border);border-radius:var(--radius);padding:28px;width:100%;max-width:360px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.login-card h2{font-size:17px;font-weight:600;margin-bottom:3px}
+.login-card .sub{font-size:13px;color:var(--text2);margin-bottom:22px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg label{font-size:12px;font-weight:500;color:var(--text2)}
+.fg input,.fg select{padding:9px 12px;font-size:13px;border:1px solid #ddddd8;border-radius:8px;background:#fff;color:var(--text);transition:border-color 0.15s}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--eb)}
+.hint{font-size:11px;color:var(--text3);margin-top:6px;padding:8px 10px;background:#f8f7f4;border-radius:6px}
+.err-box{font-size:12px;color:#a32d2d;padding:8px 12px;background:#fcebeb;border-radius:8px;border:0.5px solid #f7c1c1;display:none}
+.err-box.show{display:block}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 16px;font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;border:1px solid #ddddd8;background:#fff;color:var(--text);transition:background 0.12s,border-color 0.12s;white-space:nowrap}
+.btn:hover{background:#f3f2ef;border-color:#c0bfba}
+.btn.primary{background:var(--eb);color:#fff;border-color:var(--eb-d)}
+.btn.primary:hover{background:var(--eb-d)}
+.btn.sm{padding:5px 11px;font-size:12px}
+.btn.full{width:100%}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* ── LAYOUT ── */
+#app{display:none;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--eb2);flex-wrap:wrap;gap:8px}
+.topbar-l{display:flex;align-items:center;gap:10px}
+.logo-sm{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px}
+.app-title{font-size:14px;font-weight:600;color:#fff}
+.app-sub{font-size:11px;color:rgba(255,255,255,0.72)}
+.topbar-r{display:flex;align-items:center;gap:8px}
+.user-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,0.16);border-radius:20px;font-size:12px;color:#fff}
+.role-tag{font-size:10px;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,0.22);color:#fff;font-weight:500}
+
+/* ── SYNC BAR ── */
+.sync-bar{display:flex;align-items:center;justify-content:space-between;padding:7px 20px;background:var(--eb2-l);border-bottom:var(--border);font-size:12px;flex-wrap:wrap;gap:8px}
+.sync-status{display:flex;align-items:center;gap:7px;color:var(--text2)}
+.dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+.dot.ok{background:#1D9E75}
+.dot.busy{background:var(--eb);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sync-r input{font-size:12px;padding:4px 9px;border:1px solid #ddddd8;border-radius:7px;background:#fff;color:var(--text);width:300px;max-width:100%}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;background:var(--bg2);border-bottom:var(--border);padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 14px;font-size:13px;color:var(--text2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .12s}
+.tab.active{color:var(--eb);border-bottom-color:var(--eb);font-weight:500}
+.tab:hover:not(.active){color:var(--text)}
+
+/* ── CONTENT ── */
+.content{flex:1;padding:18px 20px;background:var(--bg3)}
+.sec{display:none}.sec.active{display:block}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.sc{background:#fff;border:var(--border);border-radius:9px;padding:12px 14px}
+.sc.hl{border-left:3px solid var(--eb)}
+.sc-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.sc-val{font-size:24px;font-weight:600;color:var(--text)}
+.sc-sub{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* ── CARDS ── */
+.card{background:#fff;border:var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:var(--border)}
+.card-hd h2{font-size:14px;font-weight:600}
+.card-hd .hright{display:flex;align-items:center;gap:8px}
+.search-row{display:flex;gap:8px;padding:9px 14px;border-bottom:var(--border);background:var(--bg2);flex-wrap:wrap}
+.search-row input,.search-row select{font-size:13px;padding:6px 10px;border:1px solid #ddddd8;border-radius:8px;background:#fff;color:var(--text)}
+.search-row input{flex:1;min-width:140px}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 12px;font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;border-bottom:var(--border);background:var(--bg2);white-space:nowrap}
+td{padding:9px 12px;border-bottom:var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.mono{font-family:'Courier New',monospace;font-size:11px;color:var(--text2)}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.b-sunmi{background:#E6F1FB;color:#0C447C}
+.b-tel{background:#EAF3DE;color:#27500A}
+.b-imp{background:#FAEEDA;color:#633806}
+.b-pes{background:#f1efe8;color:#444441}
+.b-mcel{background:#EEEDFE;color:#3C3489}
+.b-voda{background:#FCEBEB;color:#791F1F}
+.b-movi{background:#E1F5EE;color:#085041}
+
+/* ── CHIPS ── */
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:7px 14px;background:var(--bg2);border-bottom:var(--border)}
+.chip{padding:3px 10px;font-size:12px;border-radius:20px;cursor:pointer;border:1px solid #ddddd8;background:#fff;color:var(--text2)}
+.chip.active{background:var(--eb);color:#fff;border-color:var(--eb-d)}
+
+/* ── SUPERVISOR GRID ── */
+.sup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;padding:14px}
+.sup-card{border:var(--border);border-radius:9px;padding:14px;cursor:pointer;transition:border-color .12s,background .12s}
+.sup-card:hover{border-color:var(--eb);background:var(--eb-l)}.s-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.s-info{font-size:12px;color:var(--text2);margin-bottom:2px}
+.s-bar{height:3px;background:#e8e7e2;border-radius:2px;margin-top:10px;overflow:hidden}
+.s-fill{height:3px;background:var(--eb);border-radius:2px}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:100;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);width:100%;max-width:580px;max-height:90vh;overflow-y:auto;border:1px solid #ddddd8;margin:auto}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:var(--border);position:sticky;top:0;background:#fff;z-index:1}
+.modal-hd h3{font-size:15px;font-weight:600}
+.modal-x{width:26px;height:26px;border-radius:50%;border:none;background:var(--bg2);cursor:pointer;font-size:15px;color:var(--text2)}
+.modal-body{padding:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+.sec-title{font-size:12px;font-weight:500;color:var(--text2);margin:14px 0 8px;padding-bottom:4px;border-bottom:var(--border)}
+.check-row{display:flex;flex-wrap:wrap;gap:12px}
+.ci{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.ci input{width:14px;height:14px;accent-color:var(--eb)}
+.modal-ft{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:var(--border);position:sticky;bottom:0;background:#fff}
+
+/* ── PIN CHANGE MODAL ── */
+.pin-modal{max-width:340px}
+
+/* ── GUIDE ── */
+.guide-step{display:flex;gap:14px;padding:14px 0;border-bottom:var(--border)}
+.guide-step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--eb);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}.step-body h4{font-size:13px;font-weight:600;margin-bottom:4px}
+.step-body p{font-size:12px;color:var(--text2);line-height:1.6}
+.code{background:#f0efe9;border:var(--border);border-radius:8px;padding:10px 12px;font-family:'Courier New',monospace;font-size:11px;overflow-x:auto;margin-top:6px;white-space:pre;line-height:1.7}
+.info-box{font-size:12px;padding:10px 14px;border-radius:8px;border-left:3px solid var(--eb2);background:var(--eb2-l);color:#0d1f54;margin-bottom:14px;line-height:1.6}
+
+/* ── EXPORT ── */
+.exp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:14px}
+.exp-card{border:var(--border);border-radius:9px;padding:16px;text-align:center;cursor:pointer;transition:border-color .12s,background .12s}
+.exp-card:hover{border-color:var(--eb);background:var(--eb-l)}.exp-icon{font-size:30px;margin-bottom:8px}
+.exp-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.exp-desc{font-size:11px;color:var(--text2)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;right:22px;z-index:200;background:#fff;border:1px solid #dde0ea;border-left:3px solid var(--eb);border-radius:9px;padding:12px 16px;font-size:13px;display:none;max-width:300px;box-shadow:0 4px 14px rgba(31,60,144,.12)}
+.toast.show{display:block;animation:fi .2s}
+.toast.err{border-left-color:#a32d2d}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.empty{padding:36px;text-align:center;color:var(--text3);font-size:13px}
+.tick-y{color:#1D9E75}.tick-n{color:#ccc}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;gap:8px;padding:20px;color:var(--text2);font-size:13px}
+.spinner{width:16px;height:16px;border:2px solid #e0dfd9;border-top-color:var(--eb);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-logo">E</div>
+  <div style="text-align:center">
+    <div style="font-size:19px;font-weight:700;letter-spacing:-.3px">ElephantBet</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:3px">Sistema de Gestão de Equipamentos · Maputo</div>
+  </div>
+  <div class="login-card">
+    <h2>Acesso ao sistema</h2>
+    <div class="sub">Autenticação por PIN de supervisor</div>
+    <div class="fg">
+      <label>Supervisor / Utilizador</label>
+      <select id="l-user" onchange="onUserChange()">
+        <option value="">— seleccionar utilizador —</option>
+        <option value="admin">Administrador (acesso total)</option>
+      </select>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px" id="l-loading-sup" style="display:none">A carregar supervisores...</div>
+    </div>
+    <div class="fg">
+      <label>PIN (4 dígitos)</label>
+      <input type="password" id="l-pin" maxlength="4" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="err-box" id="l-err">Utilizador ou PIN incorrecto. Tente novamente.</div>
+    <div class="hint" id="l-hint">
+      <strong>Modo offline (demo):</strong> admin = 0000 · supervisores = 1234<br>
+      Configure o Google Sheets após entrar para dados reais.
+    </div>
+    <button class="btn primary full" style="margin-top:14px" onclick="doLogin()" id="l-btn">Entrar</button>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════════════ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-l">
+      <div class="logo-sm">E</div>
+      <div>
+        <div class="app-title">ElephantBet — Gestão de Equipamentos</div>
+        <div class="app-sub" id="topbar-sub">Maputo</div>
+      </div>
+    </div>
+    <div class="topbar-r">
+      <div class="user-pill">
+        <span id="u-name">—</span>
+        <span class="role-tag" id="u-role">—</span>
+      </div>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="showPinModal()">Alterar PIN</button>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="logout()">Sair</button>    </div>
+  </div>
+
+  <!-- SYNC BAR -->
+  <div class="sync-bar">
+    <div class="sync-status">
+      <div class="dot" id="sync-dot"></div>
+      <span id="sync-lbl">Google Sheets: não configurado (modo offline)</span>
+    </div>
+    <div class="sync-r">
+      <input type="text" id="sheet-url" placeholder="URL do Google Apps Script Web App (https://script.google.com/...)" value="">
+      <button class="btn sm primary" onclick="configSheet()">Ligar</button>
+      <button class="btn sm" onclick="showTab('guia')" style="font-size:11px">Como configurar?</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
+    <button class="tab" onclick="showTab('agentes')">Agentes</button>
+    <button class="tab" onclick="showTab('aparelhos')">Aparelhos</button>
+    <button class="tab" onclick="showTab('material')">Material Publicitário</button>
+    <button class="tab" onclick="showTab('supervisores')" id="tab-sup-btn">Supervisores</button>
+    <button class="tab" onclick="showTab('utilizadores')" id="tab-util-btn">Utilizadores</button>
+    <button class="tab" onclick="showTab('exportar')">Exportar CSV</button>
+    <button class="tab" onclick="showTab('guia')">Guia Google Sheets</button>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="sec active">
+      <div class="stats-grid">
+        <div class="sc hl"><div class="sc-label">Total Agentes</div><div class="sc-val" id="st-tot">0</div><div class="sc-sub" id="st-sub">—</div></div>
+        <div class="sc"><div class="sc-label">Supervisores</div><div class="sc-val" id="st-sup">0</div></div>
+        <div class="sc"><div class="sc-label">Sunmi</div><div class="sc-val" id="st-sunmi">0</div></div>
+        <div class="sc"><div class="sc-label">Impressora+Tel</div><div class="sc-val" id="st-imp">0</div></div>
+        <div class="sc"><div class="sc-label">Telefone</div><div class="sc-val" id="st-tel">0</div></div>
+        <div class="sc"><div class="sc-label">Pessoal</div><div class="sc-val" id="st-pes">0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h2>Agentes recentes</h2>
+          <div class="hright">
+            <span id="rec-info" style="font-size:12px;color:var(--text2)"></span>
+            <button class="btn sm primary btn-novo-agente" onclick="openModal('add')">+ Novo Agente</button>
+          </div>
+        </div>
+        <div class="tw"><table><thead><tr><th>ID</th><th>Supervisor</th><th>Tipo</th><th>Localização</th><th>Operadora</th></tr></thead><tbody id="rec-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- AGENTES -->
+    <div id="tab-agentes" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Lista de Agentes</h2>
+          <div class="hright"><span id="ag-ct" style="font-size:12px;color:var(--text2)"></span><button class="btn sm primary btn-novo-agente" onclick="openModal('add')">+ Adicionar</button></div>
+        </div>
+        <div class="search-row">
+          <input type="text" id="s-ag" placeholder="Pesquisar por ID, supervisor, localização..." oninput="renderAgentes()">
+          <select id="f-sup" onchange="renderAgentes()"><option value="">Todos supervisores</option></select>
+          <select id="f-tipo" onchange="renderAgentes()">
+            <option value="">Todos tipos</option>
+            <option>Sunmi</option><option>Telefone</option><option>Impressora + Telefone</option><option>Aparelho pessoal</option>
+          </select>
+        </div>
+        <div class="chips" id="op-chips">
+          <span class="chip active" onclick="setOp(this,'')">Todas operadoras</span>
+          <span class="chip" onclick="setOp(this,'Mcel')">Mcel</span>
+          <span class="chip" onclick="setOp(this,'Vodacom')">Vodacom</span>
+          <span class="chip" onclick="setOp(this,'Movitel')">Movitel</span>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID Agente</th><th>Supervisor</th><th>Tipo</th><th>Localização</th><th>IMEI</th><th>Nº SIM</th><th>Operadora</th><th>Acções</th></tr></thead>
+          <tbody id="ag-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- APARELHOS -->
+    <div id="tab-aparelhos" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Controlo de Aparelhos</h2><span id="ap-ct" style="font-size:12px;color:var(--text2)"></span></div>
+        <div class="search-row">
+          <input type="text" id="s-imei" placeholder="Pesquisar IMEI ou nº SIM..." oninput="renderAparelhos()">
+          <select id="f-tipo2" onchange="renderAparelhos()">
+            <option value="">Todos tipos</option>
+            <option>Sunmi</option><option>Telefone</option><option>Impressora + Telefone</option><option>Aparelho pessoal</option>
+          </select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID Agente</th><th>Tipo</th><th>IMEI</th><th>Nº SIM</th><th>Operadora</th><th>Localização</th></tr></thead>
+          <tbody id="ap-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- MATERIAL -->
+    <div id="tab-material" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Material Publicitário por Agente</h2></div>
+        <div class="search-row">
+          <input type="text" id="s-mat" placeholder="Pesquisar agente..." oninput="renderMaterial()">
+          <select id="f-sup-mat" onchange="renderMaterial()"><option value="">Todos supervisores</option></select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Supervisor</th><th>Localização</th><th>Barril</th><th>Tipo M-Pesa</th><th>PremierLoto</th><th>Resultado</th><th>Loto Foot</th><th>Quiosque</th><th>Sombra</th></tr></thead>
+          <tbody id="mat-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- SUPERVISORES -->
+    <div id="tab-supervisores" class="sec">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-hd"><h2>Supervisores / Comerciais</h2><span id="sup-ct" style="font-size:12px;color:var(--text2)"></span></div>
+        <div class="sup-grid" id="sup-grid"></div>
+      </div>
+    </div>
+
+    <!-- UTILIZADORES -->
+    <div id="tab-utilizadores" class="sec">
+      <div class="card">
+        <div class="card-hd">
+          <h2>Gestão de Utilizadores</h2>
+          <div class="hright">
+            <span id="util-ct" style="font-size:12px;color:var(--text2)"></span>
+            <button class="btn sm primary" onclick="openUserModal('add')">+ Novo Utilizador</button>
+          </div>
+        </div>
+        <div style="padding:10px 14px;background:var(--bg2);border-bottom:var(--border);font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--eb2);display:inline-block"></span>
+          Apenas o Administrador pode criar, editar ou remover utilizadores. Os utilizadores novos recebem PIN temporário e devem alterá-lo no primeiro acesso.
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Utilizador (login)</th><th>Nome completo</th><th>Papel</th><th>Estado</th><th>Agentes</th><th>Acções</th></tr></thead>
+            <tbody id="util-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:0">
+        <div class="card-hd"><h2>Como partilhar o acesso</h2></div>
+        <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+          <div style="border:var(--border);border-radius:9px;padding:14px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--eb2)">Sem Google Sheets</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7">
+              1. Adicione o utilizador nesta página<br>
+              2. O utilizador entra com o login e PIN definidos<br>
+              3. Partilhe o ficheiro HTML por pen, Drive ou e-mail<br>
+              <span style="color:var(--eb);font-weight:500">⚠ Os dados não persistem entre sessões sem Sheets.</span>
+            </div>
+          </div>
+          <div style="border:var(--border);border-radius:9px;padding:14px;border-left:3px solid var(--eb2)">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--eb2)">Com Google Sheets (recomendado)</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7">
+              1. Configure o Google Sheets (ver Guia)<br>
+              2. Adicione o utilizador aqui — fica gravado no Sheet<br>
+              3. Partilhe o URL ou ficheiro HTML com o utilizador<br>
+              4. O utilizador selecciona o nome na lista de login e entra com o PIN<br>
+              <span style="color:#1D9E75;font-weight:500">✓ Acesso em qualquer dispositivo, dados sempre actualizados.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPORTAR CSV -->
+    <div id="tab-exportar" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Exportar dados em CSV</h2></div>
+        <div class="search-row">
+          <select id="exp-sup"><option value="">Todos os supervisores</option></select>
+          <select id="exp-tipo"><option value="">Todos os tipos</option><option>Sunmi</option><option>Telefone</option><option>Impressora + Telefone</option><option>Aparelho pessoal</option></select>
+          <select id="exp-op"><option value="">Todas as operadoras</option><option>Mcel</option><option>Vodacom</option><option>Movitel</option></select>
+        </div>
+        <div style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:var(--border)">
+          <button class="btn primary" onclick="exportCSV('agentes')">⬇ Exportar Agentes (CSV)</button>
+          <button class="btn" onclick="exportCSV('material')">⬇ Exportar Material Publicitário (CSV)</button>
+          <button class="btn" onclick="exportCSV('aparelhos')">⬇ Exportar Aparelhos (CSV)</button>
+        </div>
+        <div style="padding:12px 16px">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Pré-visualização (primeiros 5 registos com os filtros actuais):</div>
+          <div class="tw"><table>
+            <thead><tr><th>ID</th><th>Supervisor</th><th>Tipo</th><th>Localização</th><th>IMEI</th><th>SIM</th><th>Operadora</th></tr></thead>
+            <tbody id="prev-body"></tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h2>Sobre o formato CSV</h2></div>
+        <div style="padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.7">
+          O ficheiro CSV pode ser aberto directamente no <strong>Microsoft Excel</strong>, <strong>Google Sheets</strong> ou <strong>LibreOffice Calc</strong>.
+          O ficheiro inclui BOM UTF-8 para garantir compatibilidade com caracteres especiais (ã, ç, é...).
+          Se o Google Sheets estiver ligado, pode também exportar directamente a partir do servidor usando o URL do Apps Script com <code style="font-family:monospace;background:#f0efe9;padding:1px 5px;border-radius:4px">?action=exportCSV</code>.
+        </div>
+      </div>
+    </div>
+
+    <!-- GUIA GOOGLE SHEETS -->
+    <div id="tab-guia" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Guia de Integração — Google Sheets (custo zero)</h2></div>
+        <div style="padding:16px">
+          <div class="info-box" style="border-left-color:var(--eb2);background:var(--eb2-l);color:#0d1f54">
+            Esta integração usa o Google Apps Script como backend gratuito. Os dados ficam guardados no Google Sheets e acessíveis por toda a equipa em tempo real, sem nenhum custo de servidor.
+          </div>
+
+          <div class="guide-step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <h4>Criar o Google Sheet</h4>
+              <p>Aceda a <strong>sheets.google.com</strong> com a conta Google da ElephantBet e crie uma nova folha de cálculo. Dê o nome <strong>"ElephantBet_Agentes"</strong>. Não precisa de criar as abas manualmente — o script faz isso automaticamente no passo 4.</p>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h4>Copiar o ID da folha</h4>
+              <p>No URL do Google Sheet, copie o ID que aparece entre <code style="font-family:monospace;background:#f0efe9;padding:0 4px;border-radius:3px">/d/</code> e <code style="font-family:monospace;background:#f0efe9;padding:0 4px;border-radius:3px">/edit</code>:</p>
+              <div class="code">https://docs.google.com/spreadsheets/d/<span style="background:#faeeda;padding:0 2px">SEU_ID_AQUI</span>/edit</div>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <h4>Abrir o Apps Script e colar o código</h4>
+              <p>No Google Sheets clique em <strong>Extensões → Apps Script</strong>. Apague tudo e cole o código do ficheiro <strong>ElephantBet_AppsScript.gs</strong> (disponível para download junto com este sistema). Substitua <code style="font-family:monospace;background:#f0efe9;padding:0 4px;border-radius:3px">COLE_AQUI_O_ID_DO_SEU_GOOGLE_SHEET</code> pelo ID copiado no passo 2.</p>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <h4>Executar a função de inicialização</h4>
+              <p>No editor do Apps Script, no menu de funções, seleccione <strong>inicializar</strong> e clique em <strong>Executar</strong>. Isto cria automaticamente as abas "Agentes", "Supervisores" e "Log" com os cabeçalhos correctos e os supervisores iniciais.</p>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <h4>Publicar como Web App</h4>
+              <p>Clique em <strong>Implementar → Nova implementação</strong>. Configure assim:</p>
+              <div class="code">Tipo: Web App
+Executar como: Eu (conta Google da ElephantBet)
+Quem tem acesso: Qualquer pessoa</div>
+              <p style="margin-top:8px">Clique <strong>Implementar</strong>, autorize as permissões e copie o URL gerado (começa com <code style="font-family:monospace;background:#f0efe9;padding:0 4px;border-radius:3px">https://script.google.com/macros/s/...</code>).</p>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <h4>Ligar ao sistema ElephantBet</h4>
+              <p>Cole o URL do Web App na <strong>barra de sincronização</strong> no topo desta página e clique <strong>Ligar</strong>. O sistema passa a guardar todos os dados no Google Sheets automaticamente — adições, edições e consultas sincronizadas em tempo real.</p>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-num">7</div>
+            <div class="step-body">
+              <h4>Definir PINs reais dos supervisores</h4>
+              <p>Após a inicialização, abra a aba <strong>"Supervisores"</strong> no Google Sheet e altere os PINs da coluna C para os PINs reais de cada supervisor. Cada supervisor pode também alterar o seu próprio PIN dentro do sistema usando o botão <strong>"Alterar PIN"</strong> no topo.</p>
+            </div>
+          </div>
+
+          <div class="guide-step">
+            <div class="step-num">8</div>
+            <div class="step-body">
+              <h4>Partilhar o sistema com a equipa</h4>
+              <p>Este ficheiro HTML funciona em qualquer browser sem instalação. Pode ser partilhado por:</p>
+              <div class="code">• Google Drive — partilhe o link directo do ficheiro HTML
+• GitHub Pages — upload gratuito, URL fixo e permanente
+• Servidor local da empresa — se existir infraestrutura IT
+• Pen USB — funciona offline (dados em demo sem Sheets ligado)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL AGENTE -->
+<div class="overlay" id="modal-ov" onclick="closeOv(event)">
+  <div class="modal">
+    <div class="modal-hd"><h3 id="modal-title">Registar Agente</h3><button class="modal-x" onclick="closeMD()">×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg"><label>ID do Agente *</label><input type="text" id="f-id" placeholder="ex: AG-1042"></div>
+        <div class="fg"><label>Supervisor *</label><input type="text" id="f-sup-in" placeholder="Nome do supervisor"></div>
+        <div class="fg full"><label>Localização (Bairro / Área) *</label><input type="text" id="f-loc" placeholder="ex: Matola, Xipamanine, Costa do Sol..."></div>
+        <div class="fg"><label>Tipo de Aparelho *</label>
+          <select id="f-tipo-in"><option value="">— seleccionar —</option><option>Sunmi</option><option>Telefone</option><option>Impressora + Telefone</option><option>Aparelho pessoal</option></select>
+        </div>
+        <div class="fg"><label>Operadora SIM</label>
+          <select id="f-op"><option value="">— seleccionar —</option><option>Mcel</option><option>Vodacom</option><option>Movitel</option></select>
+        </div>
+        <div class="fg"><label>IMEI do Aparelho</label><input type="text" id="f-imei" placeholder="15 dígitos"></div>
+        <div class="fg"><label>Número Cartão SIM</label><input type="text" id="f-sim" placeholder="ex: 84XXXXXXX"></div>
+      </div>
+      <div class="sec-title">Balcão <span style="font-weight:400;font-size:11px;color:var(--text3)">(selecção múltipla)</span></div>
+      <div class="check-row">
+        <label class="ci"><input type="checkbox" id="m-barril"> Barril</label>
+        <label class="ci"><input type="checkbox" id="m-mpesa"> Tipo M-Pesa</label>
+        <label class="ci"><input type="checkbox" id="m-premier"> Tipo PremierLoto</label>
+      </div>
+      <div class="sec-title">Placa <span style="font-weight:400;font-size:11px;color:var(--text3)">(selecção múltipla)</span></div>
+      <div class="check-row">
+        <label class="ci"><input type="checkbox" id="m-res"> Resultado</label>
+        <label class="ci"><input type="checkbox" id="m-loto"> Loto Foot</label>
+        <label class="ci"><input type="checkbox" id="m-quio"> Quiosque</label>
+      </div>
+      <div class="sec-title">Sombra</div>
+      <div class="check-row">
+        <label class="ci"><input type="radio" name="sombra" id="m-somb-sim" value="sim"> Sim</label>
+        <label class="ci"><input type="radio" name="sombra" id="m-somb-nao" value="nao" checked> Não</label>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeMD()">Cancelar</button>
+      <button class="btn primary" onclick="saveAgent()" id="save-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UTILIZADOR -->
+<div class="overlay" id="user-ov" onclick="closeUserOv(event)">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-hd"><h3 id="user-modal-title">Novo Utilizador</h3><button class="modal-x" onclick="closeUserMD()">×</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fg full"><label>Nome completo *</label><input type="text" id="u-nome" placeholder="ex: Fátima Mondlane"></div>
+        <div class="fg"><label>Login (sem espaços) *</label><input type="text" id="u-login" placeholder="ex: fatima.mondlane"></div>
+        <div class="fg"><label>Papel *</label>
+          <select id="u-papel" onchange="updateRoleHint()">
+            <option value="">— seleccionar —</option>
+            <option value="assistente">Assistente</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="admin">Administrador</option>
+            <option value="leitura">Só leitura</option>
+          </select>
+        </div>
+        <div class="fg"><label>PIN inicial (4 dígitos) *</label><input type="password" id="u-pin" maxlength="4" placeholder="••••"></div>
+        <div class="fg"><label>Confirmar PIN *</label><input type="password" id="u-pin2" maxlength="4" placeholder="••••"></div>
+        <div class="fg"><label>Estado</label>
+          <select id="u-ativo">
+            <option value="Sim">Activo</option>
+            <option value="Nao">Inactivo</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6" id="u-role-hint"></div>
+      <div class="err-box" id="u-err" style="margin-top:10px"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn danger" id="u-del-btn" onclick="deleteUser()" style="margin-right:auto;display:none">Remover</button>
+      <button class="btn" onclick="closeUserMD()">Cancelar</button>
+      <button class="btn primary" onclick="saveUser()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ALTERAR PIN -->
+<div class="overlay" id="pin-ov" onclick="closePinOv(event)">
+  <div class="modal pin-modal">
+    <div class="modal-hd"><h3>Alterar PIN</h3><button class="modal-x" onclick="closePinOv()">×</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>PIN actual</label><input type="password" id="pin-old" maxlength="4" placeholder="••••"></div>
+      <div class="fg"><label>Novo PIN (4 dígitos)</label><input type="password" id="pin-new" maxlength="4" placeholder="••••"></div>
+      <div class="fg"><label>Confirmar novo PIN</label><input type="password" id="pin-conf" maxlength="4" placeholder="••••"></div>
+      <div class="err-box" id="pin-err"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closePinOv()">Cancelar</button>
+      <button class="btn primary" onclick="changePin()">Alterar PIN</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ════════════════════════════════════════════════════════════
+let agents = [
+  {id:'AG-0001',sup:'Carlos Machava',loc:'Xipamanine',tipo:'Sunmi',op:'Mcel',imei:'358742091234560',sim:'840012345',mat:{barril:true,mpesa:false,premier:true,res:false,loto:true,quio:false,somb:'sim'}},
+  {id:'AG-0002',sup:'Carlos Machava',loc:'Malhangalene',tipo:'Telefone',op:'Vodacom',imei:'356789012345678',sim:'860987654',mat:{barril:false,mpesa:true,premier:false,res:true,loto:false,quio:true,somb:'nao'}},
+  {id:'AG-0003',sup:'Ana Sitoe',loc:'Costa do Sol',tipo:'Impressora + Telefone',op:'Movitel',imei:'351234567890123',sim:'870123456',mat:{barril:false,mpesa:false,premier:false,res:true,loto:true,quio:false,somb:'sim'}},
+  {id:'AG-0004',sup:'Ana Sitoe',loc:'Polana Caniço',tipo:'Sunmi',op:'Mcel',imei:'354567890123456',sim:'841234567',mat:{barril:true,mpesa:true,premier:false,res:false,loto:false,quio:true,somb:'nao'}},
+  {id:'AG-0005',sup:'João Tembe',loc:'Matola',tipo:'Aparelho pessoal',op:'Vodacom',imei:'',sim:'862345678',mat:{barril:false,mpesa:false,premier:true,res:false,loto:true,quio:true,somb:'sim'}},
+  {id:'AG-0006',sup:'João Tembe',loc:'Maxaquene',tipo:'Sunmi',op:'Mcel',imei:'357890123456789',sim:'843456789',mat:{barril:true,mpesa:false,premier:false,res:true,loto:false,quio:false,somb:'nao'}},
+  {id:'AG-0007',sup:'Maria Cumbe',loc:'KaTembe',tipo:'Telefone',op:'Movitel',imei:'350123456789012',sim:'874567890',mat:{barril:false,mpesa:true,premier:true,res:false,loto:true,quio:false,somb:'sim'}},
+  {id:'AG-0008',sup:'Pedro Nhambi',loc:'Hulene',tipo:'Sunmi',op:'Mcel',imei:'352345678901234',sim:'845678901',mat:{barril:true,mpesa:false,premier:false,res:true,loto:false,quio:true,somb:'nao'}},
+];
+
+// Utilizadores offline (modo demo — substituídos pelos do Google Sheets quando ligado)
+let users = [
+  {login:'admin',          nome:'Administrador',    pin:'0000', papel:'admin',      ativo:'Sim'},
+  {login:'assistente',     nome:'Assistente',        pin:'2222', papel:'assistente', ativo:'Sim'},
+  {login:'Carlos Machava', nome:'Carlos Machava',    pin:'1234', papel:'supervisor', ativo:'Sim'},
+  {login:'Ana Sitoe',      nome:'Ana Sitoe',         pin:'1234', papel:'supervisor', ativo:'Sim'},
+  {login:'João Tembe',     nome:'João Tembe',        pin:'1234', papel:'supervisor', ativo:'Sim'},
+  {login:'Maria Cumbe',    nome:'Maria Cumbe',       pin:'1234', papel:'supervisor', ativo:'Sim'},
+  {login:'Pedro Nhambi',   nome:'Pedro Nhambi',      pin:'1234', papel:'supervisor', ativo:'Sim'},
+];
+let editUserLogin = null;
+
+let currentUser = null;
+let currentRole = null;
+let filterOp = '';
+let editId = null;
+let sheetUrl = localStorage.getItem('eb_sheet_url') || '';
+let sheetConnected = false;
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+window.onload = function() {
+  populateSupSelect();
+  if (sheetUrl) {
+    document.getElementById('sheet-url').value = sheetUrl;
+    configSheet(true); // reconectar silenciosamente
+  }
+};
+
+function populateSupSelect() {
+  const sel = document.getElementById('l-user');
+  while (sel.options.length > 2) sel.remove(2);
+  const labelMap = { assistente:'Assistente: ', supervisor:'Supervisor: ', leitura:'Leitura: ' };
+  users.filter(u => u.papel !== 'admin' && u.ativo === 'Sim').forEach(u => {
+    const o = document.createElement('option');
+    o.value = u.login;
+    o.textContent = (labelMap[u.papel] || '') + u.nome;
+    sel.appendChild(o);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  GOOGLE SHEETS API
+// ════════════════════════════════════════════════════════════
+async function sheetGet(params) {
+  if (!sheetUrl) return null;
+  try {
+    const url = sheetUrl + '?' + new URLSearchParams(params);
+    const r = await fetch(url);
+    const data = await r.json();
+    return data;
+  } catch (e) { return null; }
+}
+
+async function sheetPost(body) {
+  if (!sheetUrl) return null;
+  try {
+    // text/plain evita CORS preflight — Apps Script aceita e o JSON é lido via e.postData.contents
+    await fetch(sheetUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(body)
+    });
+    return { status: 'ok' }; // no-cors não devolve resposta legível — assumimos ok
+  } catch (e) { return null; }
+}
+
+async function configSheet(silent=false) {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) { if(!silent) showToast('Cole o URL do Apps Script.','err'); return; }
+  if (!url.startsWith('https://')) { if(!silent) showToast('URL inválido.','err'); return; }
+  sheetUrl = url;
+  localStorage.setItem('eb_sheet_url', url);
+
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-lbl');
+  dot.className = 'dot busy'; lbl.textContent = 'A testar ligação...';
+
+  const res = await sheetGet({action:'getSupervisores'});
+  if (res && res.status === 'ok') {
+    sheetConnected = true;
+    dot.className = 'dot ok';
+    lbl.textContent = 'Google Sheets: ligado · ' + new Date().toLocaleTimeString('pt');
+    if (!silent) showToast('Google Sheets ligado! Dados reais activos.');
+    // Carregar utilizadores do sheet
+    if (res.data) {
+      const sheetUsers = res.data.map(u => ({
+        login: u.utilizador || u.login,
+        nome:  u.nome_display || u.nome,
+        pin:   String(u.pin || u.PIN || ''),
+        papel: u.papel || u.Papel || 'supervisor',
+        ativo: u.ativo || u.Ativo || 'Sim'
+      }));
+      // Manter admin local + juntar utilizadores do sheet
+      const adminLocal = users.find(u => u.login === 'admin');
+      users = [adminLocal, ...sheetUsers.filter(u => u.login !== 'admin')];
+      populateSupSelect();
+    }
+    await loadAgentsFromSheet();
+  } else {
+    dot.className = 'dot'; lbl.textContent = 'Google Sheets: erro de ligação (modo offline activo)';
+    if (!silent) showToast('Não foi possível ligar ao Google Sheets. Verifique o URL.','err');
+  }
+}
+
+async function loadAgentsFromSheet() {
+  if (!sheetConnected) return;
+  const res = await sheetGet({action:'getAgentes', user:currentUser, role:currentRole});
+  if (res && res.status === 'ok' && Array.isArray(res.data)) {
+    agents = res.data.map(r => ({
+      id: r['ID_Agente'], sup: r['Supervisor'], loc: r['Localizacao'],
+      tipo: r['Tipo_Aparelho'], op: r['Operadora'], imei: r['IMEI'], sim: r['Num_SIM'],
+      mat: {
+        barril: r['Barril']==='Sim', mpesa: r['Balcao_Mpesa']==='Sim', premier: r['Balcao_Premier']==='Sim',
+        loto: r['Placa_LotoFoot']==='Sim', quio: r['Placa_Quiosque']==='Sim', res: r['Placa_Resultado']==='Sim', somb: r['Sombra']==='Sim'
+      }
+    }));
+    refreshAll();
+  }
+}
+
+function syncLbl() {
+  if (sheetConnected) {
+    document.getElementById('sync-lbl').textContent = 'Google Sheets: ligado · sync: ' + new Date().toLocaleTimeString('pt');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════════════════
+async function doLogin() {
+  const user = document.getElementById('l-user').value;
+  const pin  = document.getElementById('l-pin').value;
+  const err  = document.getElementById('l-err');
+  const btn  = document.getElementById('l-btn');
+
+  if (!user) { err.textContent='Seleccione um utilizador.'; err.classList.add('show'); return; }
+  if (!pin)  { err.textContent='Introduza o PIN.'; err.classList.add('show'); return; }
+  err.classList.remove('show');
+
+  // Tentar autenticação via Google Sheets
+  if (sheetConnected) {
+    btn.textContent = 'A verificar...'; btn.disabled = true;
+    const res = await sheetGet({action:'login', utilizador:user, pin});
+    btn.textContent = 'Entrar'; btn.disabled = false;
+    if (res && res.status === 'ok') {
+      loginSuccess(user, res.papel, res.nome);
+      return;
+    } else {
+      err.textContent = (res && res.message) || 'PIN incorrecto.';
+      err.classList.add('show'); return;
+    }
+  }
+
+  // Fallback offline
+  const u = users.find(x => x.login === user && x.ativo === 'Sim');
+  if (!u || u.pin !== pin) { err.classList.add('show'); return; }
+  loginSuccess(user, u.papel, u.nome);
+}
+
+function loginSuccess(user, role, nome) {
+  currentUser = user; currentRole = role;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('u-name').textContent = nome || user;
+  const roleLabel = {admin:'Admin', assistente:'Assistente', supervisor:'Supervisor', leitura:'Leitura'}[role] || role;
+  document.getElementById('u-role').textContent = roleLabel;
+  const subMap = {
+    admin:      'Maputo · Acesso total',
+    assistente: 'Maputo · Gestão de agentes',
+    leitura:    'Maputo · Só leitura',
+    supervisor: 'Maputo · Apenas os seus agentes'
+  };
+  document.getElementById('topbar-sub').textContent = subMap[role] || 'Maputo';
+  // Tabs visíveis por papel: Supervisores e Utilizadores só para admin
+  document.getElementById('tab-sup-btn').style.display  = role === 'admin' ? '' : 'none';
+  document.getElementById('tab-util-btn').style.display = role === 'admin' ? '' : 'none';
+  if (sheetConnected) loadAgentsFromSheet();
+  else refreshAll();
+  showTab('dashboard');
+}
+
+function logout() {
+  currentUser=null; currentRole=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('l-pin').value='';
+  document.getElementById('l-user').value='';
+}
+
+// ════════════════════════════════════════════════════════════
+//  PIN MANAGEMENT
+// ════════════════════════════════════════════════════════════
+function showPinModal() {
+  document.getElementById('pin-old').value='';
+  document.getElementById('pin-new').value='';
+  document.getElementById('pin-conf').value='';
+  document.getElementById('pin-err').classList.remove('show');
+  document.getElementById('pin-ov').classList.add('open');
+}
+
+function closePinOv(e) {
+  if (!e || e.target===document.getElementById('pin-ov'))
+    document.getElementById('pin-ov').classList.remove('open');
+}
+
+async function changePin() {
+  const old_  = document.getElementById('pin-old').value;
+  const novo  = document.getElementById('pin-new').value;
+  const conf  = document.getElementById('pin-conf').value;
+  const errEl = document.getElementById('pin-err');
+
+  if (!old_ || !novo || !conf) { errEl.textContent='Preencha todos os campos.'; errEl.classList.add('show'); return; }
+  if (!/^\d{4}$/.test(novo))  { errEl.textContent='O PIN deve ter exactamente 4 dígitos numéricos.'; errEl.classList.add('show'); return; }
+  if (novo !== conf)           { errEl.textContent='Os PINs novos não coincidem.'; errEl.classList.add('show'); return; }
+
+  if (sheetConnected) {
+    const res = await sheetPost({action:'updatePin', utilizador:currentUser, pinAntigo:old_, pinNovo:novo});
+    if (res && res.status === 'ok') {
+      closePinOv(); showToast('PIN alterado com sucesso!');
+    } else {
+      errEl.textContent = (res && res.message) || 'Erro ao alterar PIN.'; errEl.classList.add('show');
+    }
+  } else {
+    const u = users.find(x => x.login === currentUser);
+    if (!u || u.pin !== old_) { errEl.textContent='PIN actual incorrecto.'; errEl.classList.add('show'); return; }
+    u.pin = novo;
+    closePinOv(); showToast('PIN alterado (modo offline). Para persistir, configure o Google Sheets.');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════
+function vis() {
+  // admin, assistente e leitura vêem todos os agentes
+  if (['admin','assistente','leitura'].includes(currentRole)) return agents;
+  // supervisor vê apenas os seus
+  return agents.filter(a => a.sup === currentUser);
+}
+
+// ════════════════════════════════════════════════════════════
+//  GESTÃO DE UTILIZADORES
+// ════════════════════════════════════════════════════════════
+const papelLabel = {admin:'Administrador', assistente:'Assistente', supervisor:'Supervisor', leitura:'Só leitura'};
+const papelBadge = {
+  admin:      '<span class="badge" style="background:#FAEEDA;color:#633806">Admin</span>',
+  assistente: '<span class="badge" style="background:#fdeef6;color:#8c1050">Assistente</span>',
+  supervisor: '<span class="badge" style="background:#EAF3DE;color:#27500A">Supervisor</span>',
+  leitura:    '<span class="badge" style="background:#eaeefc;color:#162c6e">Leitura</span>'
+};
+
+function renderUtilizadores() {
+  const list = users;
+  document.getElementById('util-ct').textContent = list.length + ' utilizadores';
+  const b = document.getElementById('util-body');
+  if (!list.length) { b.innerHTML='<tr><td colspan="6" class="empty">Nenhum utilizador</td></tr>'; return; }
+  b.innerHTML = list.map(u => {
+    const agentCount = u.papel === 'supervisor' ? agents.filter(a => a.sup === u.login).length : '—';
+    const ativoBadge = u.ativo === 'Sim'
+      ? '<span class="badge" style="background:#E1F5EE;color:#085041">Activo</span>'
+      : '<span class="badge" style="background:#f1efe8;color:#444441">Inactivo</span>';
+    const isAdmin = u.login === 'admin';
+    return `<tr>
+      <td style="font-weight:600;font-family:var(--font-mono,monospace);font-size:12px">${u.login}</td>
+      <td>${u.nome}</td>
+      <td>${papelBadge[u.papel] || u.papel}</td>
+      <td>${ativoBadge}</td>
+      <td style="text-align:center;color:var(--text2)">${agentCount}</td>
+      <td>
+        ${isAdmin ? '<span style="font-size:11px;color:var(--text3)">protegido</span>'
+          : `<button class="btn sm" onclick="openUserModal('edit','${u.login}')">Editar</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openUserModal(mode, login) {
+  editUserLogin = null;
+  ['u-nome','u-login','u-pin','u-pin2'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('u-papel').value = '';
+  document.getElementById('u-ativo').value = 'Sim';
+  document.getElementById('u-err').classList.remove('show');
+  document.getElementById('u-del-btn').style.display = 'none';
+  document.getElementById('u-login').disabled = false;
+
+  if (mode === 'edit' && login) {
+    const u = users.find(x => x.login === login); if (!u) return;
+    editUserLogin = login;
+    document.getElementById('user-modal-title').textContent = 'Editar Utilizador';
+    document.getElementById('u-nome').value   = u.nome;
+    document.getElementById('u-login').value  = u.login;
+    document.getElementById('u-login').disabled = true;
+    document.getElementById('u-papel').value  = u.papel;
+    document.getElementById('u-ativo').value  = u.ativo;
+    document.getElementById('u-del-btn').style.display = '';
+    document.getElementById('u-pin').placeholder  = '(deixar vazio para manter)';
+    document.getElementById('u-pin2').placeholder = '(deixar vazio para manter)';
+  } else {
+    document.getElementById('user-modal-title').textContent = 'Novo Utilizador';
+    document.getElementById('u-pin').placeholder  = '••••';
+    document.getElementById('u-pin2').placeholder = '••••';
+  }
+  updateRoleHint();
+  document.getElementById('user-ov').classList.add('open');
+}
+
+function updateRoleHint() {
+  const papel = document.getElementById('u-papel').value;
+  const hints = {
+    admin:      'Acesso total — gere agentes, utilizadores, exporta dados e vê tudo.',
+    assistente: 'Pode adicionar e editar todos os agentes do sistema. Não gere utilizadores.',
+    supervisor: 'Acesso restrito — vê e edita apenas os agentes associados ao seu nome.',
+    leitura:    'Só leitura — consulta todos os dados mas não pode adicionar nem editar agentes.'
+  };
+  document.getElementById('u-role-hint').textContent = hints[papel] || 'Seleccione um papel para ver a descrição.';
+}
+
+function closeUserOv(e) { if (e.target === document.getElementById('user-ov')) closeUserMD(); }
+function closeUserMD() {
+  document.getElementById('user-ov').classList.remove('open');
+  document.getElementById('u-login').disabled = false;
+}
+
+async function saveUser() {
+  const nome  = document.getElementById('u-nome').value.trim();
+  const login = document.getElementById('u-login').value.trim();
+  const papel = document.getElementById('u-papel').value;
+  const pin   = document.getElementById('u-pin').value;
+  const pin2  = document.getElementById('u-pin2').value;
+  const ativo = document.getElementById('u-ativo').value;
+  const errEl = document.getElementById('u-err');
+  errEl.classList.remove('show');
+
+  if (!nome || !login || !papel) { errEl.textContent='Preencha nome, login e papel.'; errEl.classList.add('show'); return; }
+  if (login.includes(' ')) { errEl.textContent='O login não pode ter espaços.'; errEl.classList.add('show'); return; }
+
+  // Validar PIN apenas se preenchido (ou obrigatório em criação)
+  if (!editUserLogin || pin) {
+    if (!pin) { errEl.textContent='Defina um PIN para o novo utilizador.'; errEl.classList.add('show'); return; }
+    if (!/^\d{4}$/.test(pin)) { errEl.textContent='O PIN deve ter exactamente 4 dígitos numéricos.'; errEl.classList.add('show'); return; }
+    if (pin !== pin2) { errEl.textContent='Os PINs não coincidem.'; errEl.classList.add('show'); return; }
+  }
+
+  if (!editUserLogin && users.find(u => u.login === login)) {
+    errEl.textContent = 'Login "' + login + '" já existe.'; errEl.classList.add('show'); return;
+  }
+
+  const userData = { login, nome, pin: pin || (users.find(u=>u.login===editUserLogin)||{}).pin, papel, ativo };
+
+  // Gravar localmente
+  if (editUserLogin) {
+    const idx = users.findIndex(u => u.login === editUserLogin);
+    if (idx !== -1) users[idx] = userData;
+    showToast('Utilizador "' + nome + '" actualizado!');
+  } else {
+    users.push(userData);
+    showToast('Utilizador "' + nome + '" criado! PIN: ' + pin);
+  }
+
+  // Sync Google Sheets (aba Supervisores)
+  if (sheetConnected) {
+    sheetPost({ action: editUserLogin ? 'updateUtilizador' : 'addUtilizador', utilizadorData: userData, utilizador: currentUser });
+  }
+
+  closeUserMD();
+  populateSupSelect(); // actualizar lista de login
+  renderUtilizadores();
+}
+
+async function deleteUser() {
+  if (!editUserLogin) return;
+  const u = users.find(x => x.login === editUserLogin);
+  if (!u) return;
+  if (!confirm('Remover utilizador "' + u.nome + '"? Esta acção não pode ser desfeita.')) return;
+  users = users.filter(x => x.login !== editUserLogin);
+  if (sheetConnected) sheetPost({ action: 'deleteUtilizador', id: editUserLogin, utilizador: currentUser });
+  closeUserMD();
+  populateSupSelect();
+  renderUtilizadores();
+  showToast('Utilizador removido.');
+}
+
+const bTipo = t => {const m={'Sunmi':'b-sunmi','Telefone':'b-tel','Impressora + Telefone':'b-imp','Aparelho pessoal':'b-pes'};return`<span class="badge ${m[t]||''}">${t}</span>`};
+const bOp   = o => {const m={'Mcel':'b-mcel','Vodacom':'b-voda','Movitel':'b-movi'};return o?`<span class="badge ${m[o]||''}">${o}</span>`:'<span style="color:var(--text3)">—</span>'};
+const tick  = v => v ? '<span class="tick-y">✓</span>' : '<span class="tick-n">—</span>';
+
+// ════════════════════════════════════════════════════════════
+//  RENDERS
+// ════════════════════════════════════════════════════════════
+function updateStats() {
+  const list = vis();
+  document.getElementById('st-tot').textContent   = list.length;
+  document.getElementById('st-sub').textContent   = currentRole==='admin'?'Maputo cidade':'Os seus agentes';
+  document.getElementById('st-sup').textContent   = new Set(list.map(a=>a.sup)).size;
+  document.getElementById('st-sunmi').textContent = list.filter(a=>a.tipo==='Sunmi').length;
+  document.getElementById('st-imp').textContent   = list.filter(a=>a.tipo==='Impressora + Telefone').length;
+  document.getElementById('st-tel').textContent   = list.filter(a=>a.tipo==='Telefone').length;
+  document.getElementById('st-pes').textContent   = list.filter(a=>a.tipo==='Aparelho pessoal').length;
+  const rec = [...list].slice(-5).reverse();
+  document.getElementById('rec-info').textContent = 'mostrando ' + rec.length + ' de ' + list.length;
+  document.getElementById('rec-body').innerHTML   = rec.map(a=>`<tr><td style="font-weight:600">${a.id}</td><td>${a.sup}</td><td>${bTipo(a.tipo)}</td><td>${a.loc}</td><td>${bOp(a.op)}</td></tr>`).join('');
+  // Botão "Novo Agente" só visível para quem pode editar
+  const podeAdd = ['admin','assistente','supervisor'].includes(currentRole);
+  document.querySelectorAll('.btn-novo-agente').forEach(b => b.style.display = podeAdd ? '' : 'none');
+}
+
+function getFiltered() {
+  const s    = (document.getElementById('s-ag')||{}).value?.toLowerCase()||'';
+  const sup  = (document.getElementById('f-sup')||{}).value||'';
+  const tipo = (document.getElementById('f-tipo')||{}).value||'';
+  return vis().filter(a=>
+    (!s  || a.id.toLowerCase().includes(s)||a.sup.toLowerCase().includes(s)||a.loc.toLowerCase().includes(s))&&
+    (!sup||a.sup===sup)&&(!tipo||a.tipo===tipo)&&(!filterOp||a.op===filterOp)
+  );
+}
+
+function renderAgentes() {
+  const list = getFiltered();
+  document.getElementById('ag-ct').textContent = list.length + ' agentes';
+  const b = document.getElementById('ag-body');
+  // Leitura não pode editar
+  const podeEditar = ['admin','assistente','supervisor'].includes(currentRole);
+  if (!list.length) { b.innerHTML='<tr><td colspan="8" class="empty">Nenhum agente encontrado</td></tr>'; return; }
+  b.innerHTML = list.map(a=>`<tr>
+    <td style="font-weight:600">${a.id}</td><td>${a.sup}</td><td>${bTipo(a.tipo)}</td><td>${a.loc}</td>
+    <td class="mono">${a.imei||'—'}</td><td class="mono">${a.sim||'—'}</td><td>${bOp(a.op)}</td>
+    <td>${podeEditar ? `<button class="btn sm" onclick="openModal('edit','${a.id}')">Editar</button>` : ''}</td>
+  </tr>`).join('');
+}
+
+function renderAparelhos() {
+  const s    = (document.getElementById('s-imei')||{}).value?.toLowerCase()||'';
+  const tipo = (document.getElementById('f-tipo2')||{}).value||'';
+  const list = vis().filter(a=>(!s||a.imei.toLowerCase().includes(s)||a.sim.toLowerCase().includes(s))&&(!tipo||a.tipo===tipo));
+  document.getElementById('ap-ct').textContent = list.length + ' aparelhos';
+  const b = document.getElementById('ap-body');
+  if (!list.length) { b.innerHTML='<tr><td colspan="6" class="empty">Nenhum resultado</td></tr>'; return; }
+  b.innerHTML = list.map(a=>`<tr><td style="font-weight:600">${a.id}</td><td>${bTipo(a.tipo)}</td><td class="mono">${a.imei||'—'}</td><td class="mono">${a.sim||'—'}</td><td>${bOp(a.op)}</td><td>${a.loc}</td></tr>`).join('');
+}
+
+function renderMaterial() {
+  const s   = (document.getElementById('s-mat')||{}).value?.toLowerCase()||'';
+  const sup = (document.getElementById('f-sup-mat')||{}).value||'';
+  const list= vis().filter(a=>(!s||a.id.toLowerCase().includes(s)||a.loc.toLowerCase().includes(s))&&(!sup||a.sup===sup));
+  const b   = document.getElementById('mat-body');
+  if (!list.length) { b.innerHTML='<tr><td colspan="10" class="empty">Nenhum resultado</td></tr>'; return; }
+  b.innerHTML = list.map(a=>`<tr>
+    <td style="font-weight:600">${a.id}</td><td>${a.sup}</td><td>${a.loc}</td>
+    ${['barril','mpesa','premier','res','loto','quio'].map(k=>`<td style="text-align:center">${tick(a.mat[k])}</td>`).join('')}
+    <td style="text-align:center">${a.mat.somb==='sim'?'<span class="tick-y">✓</span>':'<span class="tick-n">—</span>'}</td>
+  </tr>`).join('');
+}
+
+function renderSupervisores() {
+  const sups = {};
+  vis().forEach(a=>{if(!sups[a.sup])sups[a.sup]=[];sups[a.sup].push(a)});
+  const keys = Object.keys(sups).sort();
+  document.getElementById('sup-ct').textContent = keys.length + ' supervisores';
+  const max = Math.max(...keys.map(k=>sups[k].length),1);
+  document.getElementById('sup-grid').innerHTML = keys.map(k=>{
+    const l=sups[k]; const pct=Math.round(l.length/max*100);
+    const locs=[...new Set(l.map(a=>a.loc))];
+    return `<div class="sup-card" onclick="filterBySup('${k}')"><div class="s-name">${k}</div><div class="s-info">${l.length} agente${l.length!==1?'s':''}</div><div class="s-info">${locs.slice(0,2).join(', ')}${locs.length>2?' ...':''}</div><div class="s-bar"><div class="s-fill" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+}
+
+function filterBySup(s){document.getElementById('f-sup').value=s;showTab('agentes');renderAgentes()}
+function setOp(el,v){document.querySelectorAll('#op-chips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');filterOp=v;renderAgentes()}
+
+function updateSelects() {
+  const sups=[...new Set(agents.map(a=>a.sup))].sort();
+  ['f-sup','f-sup-mat','exp-sup'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const cur=el.value;
+    el.innerHTML='<option value="">Todos supervisores</option>'+sups.map(s=>`<option${s===cur?' selected':''}>${s}</option>`).join('');
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  EXPORT CSV
+// ════════════════════════════════════════════════════════════
+function getExpList() {
+  const sup  = document.getElementById('exp-sup').value;
+  const tipo = document.getElementById('exp-tipo').value;
+  const op   = document.getElementById('exp-op').value;
+  return vis().filter(a=>(!sup||a.sup===sup)&&(!tipo||a.tipo===tipo)&&(!op||a.op===op));
+}
+
+function renderPreview() {
+  const list = getExpList().slice(0,5);
+  document.getElementById('prev-body').innerHTML = list.map(a=>`<tr><td style="font-weight:600">${a.id}</td><td>${a.sup}</td><td>${bTipo(a.tipo)}</td><td>${a.loc}</td><td class="mono">${a.imei||'—'}</td><td class="mono">${a.sim||'—'}</td><td>${bOp(a.op)}</td></tr>`).join('');
+}
+
+function exportCSV(tipo) {
+  const list = getExpList();
+  if (!list.length) { showToast('Sem dados para exportar.','err'); return; }
+
+  let headers, rows;
+  if (tipo === 'agentes') {
+    headers = ['ID_Agente','Supervisor','Localizacao','Tipo_Aparelho','Operadora','IMEI','Num_SIM'];
+    rows = list.map(a=>[a.id,a.sup,a.loc,a.tipo,a.op,a.imei,a.sim]);
+  } else if (tipo === 'aparelhos') {
+    headers = ['ID_Agente','Tipo_Aparelho','IMEI','Num_SIM','Operadora','Localizacao'];
+    rows = list.map(a=>[a.id,a.tipo,a.imei,a.sim,a.op,a.loc]);
+  } else {
+    headers = ['ID_Agente','Supervisor','Localizacao','Barril','Balcao_Mpesa','Balcao_Premier','Placa_Resultado','Placa_LotoFoot','Placa_Quiosque','Sombra'];
+    rows = list.map(a=>[a.id,a.sup,a.loc,
+      a.mat.barril?'Sim':'Não', a.mat.mpesa?'Sim':'Não', a.mat.premier?'Sim':'Não',
+      a.mat.res?'Sim':'Não', a.mat.loto?'Sim':'Não', a.mat.quio?'Sim':'Não',
+      a.mat.somb==='sim'?'Sim':'Não']);
+  }
+
+  const csv = '\uFEFF' + [headers, ...rows].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const dt  = new Date().toISOString().slice(0,10);
+  downloadBlob(csv,'text/csv;charset=utf-8',`ElephantBet_${tipo}_${dt}.csv`);
+  showToast('CSV exportado com sucesso!');
+}
+
+function downloadBlob(content, type, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type}));
+  a.download = filename; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ════════════════════════════════════════════════════════════
+//  MODAL AGENTE
+// ════════════════════════════════════════════════════════════
+function openModal(mode, id) {
+  editId = null;
+  ['f-id','f-sup-in','f-loc','f-imei','f-sim'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f-tipo-in').value=''; document.getElementById('f-op').value='';
+  ['m-barril','m-mpesa','m-premier','m-loto','m-quio','m-res'].forEach(i=>document.getElementById(i).checked=false);
+  document.getElementById('m-somb-nao').checked = true; // Sombra: Não por omissão
+
+  if (mode==='edit'&&id) {
+    const a=agents.find(x=>x.id===id); if(!a)return;
+    editId=id;
+    document.getElementById('modal-title').textContent='Editar Agente — '+id;
+    document.getElementById('f-id').value=a.id; document.getElementById('f-id').disabled=true;
+    document.getElementById('f-sup-in').value=a.sup; document.getElementById('f-loc').value=a.loc;
+    document.getElementById('f-tipo-in').value=a.tipo; document.getElementById('f-op').value=a.op;
+    document.getElementById('f-imei').value=a.imei; document.getElementById('f-sim').value=a.sim;
+    ['barril','mpesa','premier','loto','quio','res'].forEach(k=>document.getElementById('m-'+k).checked=a.mat[k]);
+    // Sombra é radio: 'sim' ou 'nao'
+    if (a.mat.somb === 'sim') document.getElementById('m-somb-sim').checked = true;
+    else document.getElementById('m-somb-nao').checked = true;
+  } else {
+    document.getElementById('modal-title').textContent='Registar Agente';
+    document.getElementById('f-id').disabled=false;
+    if (currentRole==='supervisor') document.getElementById('f-sup-in').value=currentUser;
+  }
+  document.getElementById('modal-ov').classList.add('open');
+}
+
+function closeOv(e){if(e.target===document.getElementById('modal-ov'))closeMD()}
+function closeMD(){document.getElementById('modal-ov').classList.remove('open');document.getElementById('f-id').disabled=false}
+
+async function saveAgent() {
+  const id   = document.getElementById('f-id').value.trim();
+  const sup  = document.getElementById('f-sup-in').value.trim();
+  const loc  = document.getElementById('f-loc').value.trim();
+  const tipo = document.getElementById('f-tipo-in').value;
+  if (!id||!sup||!loc||!tipo){showToast('Preencha os campos obrigatórios (*).','err');return}
+
+  const mat = {
+    barril:  document.getElementById('m-barril').checked,
+    mpesa:   document.getElementById('m-mpesa').checked,
+    premier: document.getElementById('m-premier').checked,
+    res:     document.getElementById('m-res').checked,
+    loto:    document.getElementById('m-loto').checked,
+    quio:    document.getElementById('m-quio').checked,
+    somb:    document.getElementById('m-somb-sim').checked ? 'sim' : 'nao'
+  };
+
+  const data = {
+    id, sup, loc, tipo,
+    op:   document.getElementById('f-op').value,
+    imei: document.getElementById('f-imei').value.trim(),
+    sim:  document.getElementById('f-sim').value.trim(),
+    mat
+  };
+
+  const btn = document.getElementById('save-btn');
+  btn.textContent = 'A guardar...'; btn.disabled = true;
+
+  const isEdit = !!editId; // guardar antes de qualquer reset
+
+  // ── 1. Gravar localmente SEMPRE (memória) ─────────────────
+  if (isEdit) {
+    const idx = agents.findIndex(a => a.id === editId);
+    if (idx !== -1) agents[idx] = data;
+  } else {
+    if (agents.find(a => a.id === id)) {
+      showToast('ID ' + id + ' já existe.', 'err');
+      btn.textContent = 'Guardar'; btn.disabled = false;
+      return;
+    }
+    agents.push(data);
+  }
+
+  // ── 2. Fechar modal e mostrar resultado imediatamente ─────
+  btn.textContent = 'Guardar'; btn.disabled = false;
+  closeMD();
+  refreshAll();
+  showTab(isEdit ? 'agentes' : 'dashboard');
+  showToast(isEdit ? 'Agente ' + id + ' actualizado!' : 'Agente ' + id + ' registado!');
+
+  // ── 3. Sincronizar Google Sheets em segundo plano ─────────
+  if (sheetConnected) {
+    const payload = {
+      ID_Agente:      data.id,
+      Supervisor:     data.sup,
+      Localizacao:    data.loc,
+      Tipo_Aparelho:  data.tipo,
+      Operadora:      data.op,
+      IMEI:           data.imei,
+      Num_SIM:        data.sim,
+      Barril:         mat.barril   ? 'Sim' : 'Não',
+      Balcao_Mpesa:   mat.mpesa    ? 'Sim' : 'Não',
+      Balcao_Premier: mat.premier  ? 'Sim' : 'Não',
+      Placa_LotoFoot: mat.loto     ? 'Sim' : 'Não',
+      Placa_Quiosque: mat.quio     ? 'Sim' : 'Não',
+      Placa_Resultado:mat.res      ? 'Sim' : 'Não',
+      Sombra:         mat.somb === 'sim' ? 'Sim' : 'Não'
+    };
+    try {
+      // Apps Script exige no-cors OU um proxy — usamos mode:'no-cors'
+      // e assumimos sucesso (Apps Script não devolve CORS headers por omissão)
+      await fetch(sheetUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' }, // text/plain evita preflight CORS
+        body: JSON.stringify({ action: isEdit ? 'updateAgente' : 'addAgente', agente: payload, utilizador: currentUser })
+      });
+      syncLbl();
+    } catch(e) {
+      showToast('Guardado localmente. Erro de ligação ao Google Sheets.', 'err');
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  TABS & REFRESH
+// ════════════════════════════════════════════════════════════
+function refreshAll(){updateSelects();updateStats();renderAgentes();renderAparelhos();renderMaterial();renderSupervisores();renderUtilizadores();renderPreview()}
+
+function showTab(tab) {
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const el=document.getElementById('tab-'+tab); if(el)el.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>{if(t.getAttribute('onclick')?.includes("'"+tab+"'"))t.classList.add('active')});
+  if(tab==='agentes'){updateSelects();renderAgentes()}
+  if(tab==='aparelhos')renderAparelhos();
+  if(tab==='material'){updateSelects();renderMaterial()}
+  if(tab==='supervisores')renderSupervisores();
+  if(tab==='utilizadores')renderUtilizadores();
+  if(tab==='exportar'){updateSelects();renderPreview()}
+  if(tab==='dashboard')updateStats();
+}
+
+function showToast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+</script>
+</body>
+</html>
