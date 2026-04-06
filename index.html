@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ElephantBet — Gestão de Equipamentos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f4f5f8;color:#1a1a2e;font-size:14px;line-height:1.5}
+:root{--eb:#e82e81;--eb-d:#c01f68;--eb-l:#fdeef6;--eb2:#1f3c90;--eb2-d:#162c6e;--eb2-l:#eaeefc;--radius:10px;--border:0.5px solid #dde0ea;--bg:#fff;--bg2:#f6f7fb;--bg3:#edf0f7;--text:#1a1a2e;--text2:#5a5f7a;--text3:#9095b0}
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;background:linear-gradient(135deg,#eaeefc 0%,#fdeef6 100%)}
+.login-logo{width:64px;height:64px;border-radius:18px;background:var(--eb);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff}
+.login-card{background:#fff;border:var(--border);border-radius:var(--radius);padding:28px;width:100%;max-width:360px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.login-card h2{font-size:17px;font-weight:600;margin-bottom:3px}
+.login-card .sub{font-size:13px;color:var(--text2);margin-bottom:22px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg label{font-size:12px;font-weight:500;color:var(--text2)}
+.fg input,.fg select{padding:9px 12px;font-size:13px;border:1px solid #ddddd8;border-radius:8px;background:#fff;color:var(--text);transition:border-color .15s}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--eb)}
+.hint{font-size:11px;color:var(--text3);margin-top:6px;padding:8px 10px;background:#f8f7f4;border-radius:6px}
+.err-box{font-size:12px;color:#a32d2d;padding:8px 12px;background:#fcebeb;border-radius:8px;border:.5px solid #f7c1c1;display:none}
+.err-box.show{display:block}
+.btn{padding:8px 16px;font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;border:1px solid #ddddd8;background:#fff;color:var(--text);transition:background .12s;white-space:nowrap}
+.btn:hover{background:#f3f2ef}
+.btn.primary{background:var(--eb);color:#fff;border-color:var(--eb-d)}
+.btn.primary:hover{background:var(--eb-d)}
+.btn.danger{background:#fcebeb;color:#a32d2d;border-color:#f7c1c1}
+.btn.sm{padding:5px 11px;font-size:12px}
+.btn.full{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+#app{display:none;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--eb2);flex-wrap:wrap;gap:8px}
+.topbar-l{display:flex;align-items:center;gap:10px}
+.logo-sm{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px}
+.app-title{font-size:14px;font-weight:600;color:#fff}
+.app-sub{font-size:11px;color:rgba(255,255,255,.72)}
+.topbar-r{display:flex;align-items:center;gap:8px}
+.user-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,.16);border-radius:20px;font-size:12px;color:#fff}
+.role-tag{font-size:10px;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.22);color:#fff;font-weight:500}
+.sync-bar{display:flex;align-items:center;justify-content:space-between;padding:7px 20px;background:var(--eb2-l);border-bottom:var(--border);font-size:12px;flex-wrap:wrap;gap:8px}
+.sync-status{display:flex;align-items:center;gap:7px;color:var(--text2)}
+.dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+.dot.ok{background:#1D9E75}
+.dot.busy{background:var(--eb);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sync-r input{font-size:12px;padding:4px 9px;border:1px solid #ddddd8;border-radius:7px;background:#fff;color:var(--text);width:300px;max-width:100%}
+.tabs{display:flex;background:var(--bg2);border-bottom:var(--border);padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 14px;font-size:13px;color:var(--text2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .12s}
+.tab.active{color:var(--eb);border-bottom-color:var(--eb);font-weight:500}
+.tab:hover:not(.active){color:var(--text)}
+.content{flex:1;padding:18px 20px;background:var(--bg3)}
+.sec{display:none}.sec.active{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.sc{background:#fff;border:var(--border);border-radius:9px;padding:12px 14px}
+.sc.hl{border-left:3px solid var(--eb)}
+.sc-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.sc-val{font-size:24px;font-weight:600}
+.sc-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.card{background:#fff;border:var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:var(--border)}
+.card-hd h2{font-size:14px;font-weight:600}
+.hright{display:flex;align-items:center;gap:8px}
+.search-row{display:flex;gap:8px;padding:9px 14px;border-bottom:var(--border);background:var(--bg2);flex-wrap:wrap}
+.search-row input,.search-row select{font-size:13px;padding:6px 10px;border:1px solid #ddddd8;border-radius:8px;background:#fff;color:var(--text)}
+.search-row input{flex:1;min-width:140px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 12px;font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;border-bottom:var(--border);background:var(--bg2);white-space:nowrap}
+td{padding:9px 12px;border-bottom:var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.mono{font-family:'Courier New',monospace;font-size:11px;color:var(--text2)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.b-sunmi{background:#E6F1FB;color:#0C447C}.b-tel{background:#EAF3DE;color:#27500A}
+.b-imp{background:#FAEEDA;color:#633806}.b-pes{background:#f1efe8;color:#444441}
+.b-mcel{background:#EEEDFE;color:#3C3489}.b-voda{background:#FCEBEB;color:#791F1F}.b-movi{background:#E1F5EE;color:#085041}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:7px 14px;background:var(--bg2);border-bottom:var(--border)}
+.chip{padding:3px 10px;font-size:12px;border-radius:20px;cursor:pointer;border:1px solid #ddddd8;background:#fff;color:var(--text2)}
+.chip.active{background:var(--eb);color:#fff;border-color:var(--eb-d)}
+.sup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;padding:14px}
+.sup-card{border:var(--border);border-radius:9px;padding:14px;cursor:pointer;transition:border-color .12s}
+.sup-card:hover{border-color:var(--eb);background:var(--eb-l)}
+.s-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.s-info{font-size:12px;color:var(--text2);margin-bottom:2px}
+.s-bar{height:3px;background:#e8e7e2;border-radius:2px;margin-top:10px;overflow:hidden}
+.s-fill{height:3px;background:var(--eb);border-radius:2px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:100;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);width:100%;max-width:580px;max-height:90vh;overflow-y:auto;border:1px solid #ddddd8;margin:auto}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:var(--border);position:sticky;top:0;background:#fff;z-index:1}
+.modal-hd h3{font-size:15px;font-weight:600}
+.modal-x{width:26px;height:26px;border-radius:50%;border:none;background:var(--bg2);cursor:pointer;font-size:15px;color:var(--text2)}
+.modal-body{padding:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+.sec-title{font-size:12px;font-weight:500;color:var(--text2);margin:14px 0 8px;padding-bottom:4px;border-bottom:var(--border)}
+.check-row{display:flex;flex-wrap:wrap;gap:12px}
+.ci{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.ci input{width:14px;height:14px;accent-color:var(--eb)}
+.modal-ft{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:var(--border);position:sticky;bottom:0;background:#fff}
+.code{background:#f0efe9;border:var(--border);border-radius:8px;padding:10px 12px;font-family:'Courier New',monospace;font-size:11px;overflow-x:auto;margin-top:6px;white-space:pre;line-height:1.7}
+.guide-step{display:flex;gap:14px;padding:14px 0;border-bottom:var(--border)}
+.guide-step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--eb);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-body h4{font-size:13px;font-weight:600;margin-bottom:4px}
+.step-body p{font-size:12px;color:var(--text2);line-height:1.6}
+.toast{position:fixed;bottom:22px;right:22px;z-index:200;background:#fff;border:1px solid #dde0ea;border-left:3px solid var(--eb);border-radius:9px;padding:12px 16px;font-size:13px;display:none;max-width:300px}
+.toast.show{display:block;animation:fi .2s}
+.toast.err{border-left-color:#a32d2d}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.empty{padding:36px;text-align:center;color:var(--text3);font-size:13px}
+.tick-y{color:#1D9E75}.tick-n{color:#ccc}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">E</div>
+  <div style="text-align:center">
+    <div style="font-size:19px;font-weight:700">ElephantBet</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:3px">Sistema de Gestão de Equipamentos · Maputo</div>
+  </div>
+  <div class="login-card">
+    <h2>Acesso ao sistema</h2>
+    <div class="sub">Autenticação por PIN</div>
+    <div class="fg">
+      <label>Utilizador</label>
+      <select id="l-user">
+        <option value="">— seleccionar —</option>
+        <option value="admin">Administrador</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>PIN (4 dígitos)</label>
+      <input type="password" id="l-pin" maxlength="4" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="err-box" id="l-err"></div>
+    <div class="hint">PIN demo: admin = <strong>0000</strong> · supervisores = <strong>1234</strong></div>
+    <button class="btn primary full" style="margin-top:14px" onclick="doLogin()" id="l-btn">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-l">
+      <div class="logo-sm">E</div>
+      <div>
+        <div class="app-title">ElephantBet — Gestão de Equipamentos</div>
+        <div class="app-sub" id="topbar-sub">Maputo</div>
+      </div>
+    </div>
+    <div class="topbar-r">
+      <div class="user-pill"><span id="u-name">—</span><span class="role-tag" id="u-role">—</span></div>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="showPinModal()">Alterar PIN</button>
+      <button class="btn sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="sync-bar">
+    <div class="sync-status">
+      <div class="dot" id="sync-dot"></div>
+      <span id="sync-lbl">Google Sheets: não configurado</span>
+    </div>
+    <div class="sync-r">
+      <button class="btn sm" onclick="manualRefresh()" id="refresh-btn" style="display:none">↻ Actualizar agora</button>
+      <div id="sync-admin-area" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="text" id="sheet-url" placeholder="URL do Google Apps Script Web App">
+        <button class="btn sm primary" onclick="configSheet()">Ligar</button>
+        <button class="btn sm" onclick="showTab('guia')" style="font-size:11px">Como configurar?</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
+    <button class="tab" onclick="showTab('agentes')">Agentes</button>
+    <button class="tab" onclick="showTab('aparelhos')">Aparelhos</button>
+    <button class="tab" onclick="showTab('material')">Material Publicitário</button>
+    <button class="tab" onclick="showTab('supervisores')" id="tab-sup-btn">Supervisores</button>
+    <button class="tab" onclick="showTab('utilizadores')" id="tab-util-btn">Utilizadores</button>
+    <button class="tab" onclick="showTab('exportar')">Exportar CSV</button>
+    <button class="tab" onclick="showTab('guia')" id="tab-guia-btn">Guia Google Sheets</button>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="sec active">
+      <div class="stats-grid">
+        <div class="sc hl"><div class="sc-label">Total Agentes</div><div class="sc-val" id="st-tot">0</div><div class="sc-sub" id="st-sub">—</div></div>
+        <div class="sc"><div class="sc-label">Supervisores</div><div class="sc-val" id="st-sup">0</div></div>
+        <div class="sc"><div class="sc-label">Sunmi</div><div class="sc-val" id="st-sunmi">0</div></div>
+        <div class="sc"><div class="sc-label">Impressora+Tel</div><div class="sc-val" id="st-imp">0</div></div>
+        <div class="sc"><div class="sc-label">Telefone</div><div class="sc-val" id="st-tel">0</div></div>
+        <div class="sc"><div class="sc-label">Pessoal</div><div class="sc-val" id="st-pes">0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h2>Agentes recentes</h2>
+          <div class="hright">
+            <span id="rec-info" style="font-size:12px;color:var(--text2)"></span>
+            <button class="btn sm primary btn-add" onclick="openModal('add')">+ Novo Agente</button>
+          </div>
+        </div>
+        <div class="tw"><table><thead><tr><th>ID</th><th>Supervisor</th><th>Tipo</th><th>Localização</th><th>Operadora</th></tr></thead><tbody id="rec-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- AGENTES -->
+    <div id="tab-agentes" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Lista de Agentes</h2>
+          <div class="hright"><span id="ag-ct" style="font-size:12px;color:var(--text2)"></span><button class="btn sm primary btn-add" onclick="openModal('add')">+ Adicionar</button></div>
+        </div>
+        <div class="search-row">
+          <input type="text" id="s-ag" placeholder="Pesquisar ID, supervisor, localização..." oninput="renderAgentes()">
+          <select id="f-sup" onchange="renderAgentes()"><option value="">Todos supervisores</option></select>
+          <select id="f-tipo" onchange="renderAgentes()"><option value="">Todos tipos</option><option>Sunmi</option><option>Telefone</option><option>Impressora + Telefone</option><option>Aparelho pessoal</option></select>
+        </div>
+        <div class="chips" id="op-chips">
+          <span class="chip active" onclick="setOp(this,'')">Todas</span>
+          <span class="chip" onclick="setOp(this,'Mcel')">Mcel</span>
+          <span class="chip" onclick="setOp(this,'Vodacom')">Vodacom</span>
+          <span class="chip" onclick="setOp(this,'Movitel')">Movitel</span>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Supervisor</th><th>Tipo</th><th>Localização</th><th>IMEI</th><th>Nº SIM</th><th>Operadora</th><th>Acções</th></tr></thead>
+          <tbody id="ag-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- APARELHOS -->
+    <div id="tab-aparelhos" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Controlo de Aparelhos</h2><span id="ap-ct" style="font-size:12px;color:var(--text2)"></span></div>
+        <div class="search-row">
+          <input type="text" id="s-imei" placeholder="IMEI ou nº SIM..." oninput="renderAparelhos()">
+          <select id="f-tipo2" onchange="renderAparelhos()"><option value="">Todos tipos</option><option>Sunmi</option><option>Telefone</option><option>Impressora + Telefone</option><option>Aparelho pessoal</option></select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Tipo</th><th>IMEI</th><th>Nº SIM</th><th>Operadora</th><th>Localização</th></tr></thead>
+          <tbody id="ap-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- MATERIAL -->
+    <div id="tab-material" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Material Publicitário</h2></div>
+        <div class="search-row">
+          <input type="text" id="s-mat" placeholder="Pesquisar agente..." oninput="renderMaterial()">
+          <select id="f-sup-mat" onchange="renderMaterial()"><option value="">Todos supervisores</option></select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>ID</th><th>Supervisor</th><th>Localização</th><th>Barril</th><th>Tipo M-Pesa</th><th>PremierLoto</th><th>Resultado</th><th>Loto Foot</th><th>Quiosque</th><th>Sombra</th></tr></thead>
+          <tbody id="mat-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- SUPERVISORES -->
+    <div id="tab-supervisores" class="sec">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-hd"><h2>Supervisores / Comerciais</h2><span id="sup-ct" style="font-size:12px;color:var(--text2)"></span></div>
+        <div class="sup-grid" id="sup-grid"></div>
+      </div>
+    </div>
+
+    <!-- UTILIZADORES -->
+    <div id="tab-utilizadores" class="sec">
+      <div class="card">
+        <div class="card-hd">
+          <h2>Gestão de Utilizadores</h2>
+          <div class="hright"><span id="util-ct" style="font-size:12px;color:var(--text2)"></span><button class="btn sm primary" onclick="openUserModal('add')">+ Novo Utilizador</button></div>
+        </div>
+        <div style="padding:10px 14px;background:var(--bg2);border-bottom:var(--border);font-size:12px;color:var(--text2)">
+          Apenas o Administrador pode criar, editar ou remover utilizadores.
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Login</th><th>Nome</th><th>Papel</th><th>Estado</th><th>Agentes</th><th>Acções</th></tr></thead>
+          <tbody id="util-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- EXPORTAR -->
+    <div id="tab-exportar" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Exportar dados em CSV</h2></div>
+        <div class="search-row">
+          <select id="exp-sup"><option value="">Todos supervisores</option></select>
+          <select id="exp-tipo"><option value="">Todos tipos</option><option>Sunmi</option><option>Telefone</option><option>Impressora + Telefone</option><option>Aparelho pessoal</option></select>
+          <select id="exp-op"><option value="">Todas operadoras</option><option>Mcel</option><option>Vodacom</option><option>Movitel</option></select>
+        </div>
+        <div style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:var(--border)">
+          <button class="btn primary" onclick="exportCSV('agentes')">⬇ Agentes (CSV)</button>
+          <button class="btn" onclick="exportCSV('material')">⬇ Material Publicitário (CSV)</button>
+          <button class="btn" onclick="exportCSV('aparelhos')">⬇ Aparelhos (CSV)</button>
+        </div>
+        <div style="padding:12px 16px">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Pré-visualização (5 registos):</div>
+          <div class="tw"><table>
+            <thead><tr><th>ID</th><th>Supervisor</th><th>Tipo</th><th>Localização</th><th>IMEI</th><th>SIM</th><th>Operadora</th></tr></thead>
+            <tbody id="prev-body"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUIA -->
+    <div id="tab-guia" class="sec">
+      <div class="card">
+        <div class="card-hd"><h2>Guia — Integração Google Sheets</h2></div>
+        <div style="padding:16px">
+          <div style="font-size:12px;padding:10px 14px;border-radius:8px;border-left:3px solid var(--eb2);background:var(--eb2-l);color:#0d1f54;margin-bottom:14px;line-height:1.6">
+            Esta integração guarda todos os dados no Google Sheets gratuitamente. Os dados ficam acessíveis a toda a equipa em tempo real.
+          </div>
+          <div class="guide-step"><div class="step-num">1</div><div class="step-body"><h4>Criar o Google Sheet</h4><p>Aceda a sheets.google.com e crie uma nova folha chamada "ElephantBet_Agentes".</p></div></div>
+          <div class="guide-step"><div class="step-num">2</div><div class="step-body"><h4>Abrir o Apps Script</h4><p>No Google Sheets, clique em <strong>Extensões → Apps Script</strong>. Cole o código do ficheiro ElephantBet_AppsScript.gs e substitua o SHEET_ID pelo ID da sua folha.</p></div></div>
+          <div class="guide-step"><div class="step-num">3</div><div class="step-body"><h4>Executar a inicialização</h4><p>No editor Apps Script, seleccione a função <strong>inicializar</strong> e clique Executar. Cria as abas automaticamente.</p></div></div>
+          <div class="guide-step"><div class="step-num">4</div><div class="step-body"><h4>Publicar como Web App</h4><div class="code">Implementar → Nova implementação → Web App
+Executar como: Eu (conta Google)
+Quem tem acesso: Qualquer pessoa</div></div></div>
+          <div class="guide-step"><div class="step-num">5</div><div class="step-body"><h4>Colar o URL aqui</h4><p>Cole o URL do Web App na barra de sincronização (visível só para o Admin) e clique <strong>Ligar</strong>.</p></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL AGENTE -->
+<div class="overlay" id="modal-ov" onclick="if(event.target===this)closeMD()">
+  <div class="modal">
+    <div class="modal-hd"><h3 id="modal-title">Registar Agente</h3><button class="modal-x" onclick="closeMD()">×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg"><label>ID do Agente *</label><input type="text" id="f-id" placeholder="ex: AG-1042"></div>
+        <div class="fg"><label>Supervisor *</label><input type="text" id="f-sup-in" placeholder="Nome do supervisor"></div>
+        <div class="fg full"><label>Localização *</label><input type="text" id="f-loc" placeholder="ex: Matola, Xipamanine..."></div>
+        <div class="fg"><label>Tipo de Aparelho *</label>
+          <select id="f-tipo-in"><option value="">— seleccionar —</option><option>Sunmi</option><option>Telefone</option><option>Impressora + Telefone</option><option>Aparelho pessoal</option></select>
+        </div>
+        <div class="fg"><label>Operadora SIM</label>
+          <select id="f-op"><option value="">— seleccionar —</option><option>Mcel</option><option>Vodacom</option><option>Movitel</option></select>
+        </div>
+        <div class="fg"><label>IMEI</label><input type="text" id="f-imei" placeholder="15 dígitos"></div>
+        <div class="fg"><label>Nº Cartão SIM</label><input type="text" id="f-sim" placeholder="ex: 84XXXXXXX"></div>
+      </div>
+      <div class="sec-title">Balcão <span style="font-weight:400;font-size:11px;color:var(--text3)">(selecção múltipla)</span></div>
+      <div class="check-row">
+        <label class="ci"><input type="checkbox" id="m-barril"> Barril</label>
+        <label class="ci"><input type="checkbox" id="m-mpesa"> Tipo M-Pesa</label>
+        <label class="ci"><input type="checkbox" id="m-premier"> Tipo PremierLoto</label>
+      </div>
+      <div class="sec-title">Placa <span style="font-weight:400;font-size:11px;color:var(--text3)">(selecção múltipla)</span></div>
+      <div class="check-row">
+        <label class="ci"><input type="checkbox" id="m-res"> Resultado</label>
+        <label class="ci"><input type="checkbox" id="m-loto"> Loto Foot</label>
+        <label class="ci"><input type="checkbox" id="m-quio"> Quiosque</label>
+      </div>
+      <div class="sec-title">Sombra</div>
+      <div class="check-row">
+        <label class="ci"><input type="radio" name="sombra" id="m-somb-sim" value="sim"> Sim</label>
+        <label class="ci"><input type="radio" name="sombra" id="m-somb-nao" value="nao" checked> Não</label>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeMD()">Cancelar</button>
+      <button class="btn primary" onclick="saveAgent()" id="save-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UTILIZADOR -->
+<div class="overlay" id="user-ov" onclick="if(event.target===this)closeUserMD()">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-hd"><h3 id="user-modal-title">Novo Utilizador</h3><button class="modal-x" onclick="closeUserMD()">×</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fg full"><label>Nome completo *</label><input type="text" id="u-nome" placeholder="ex: Fátima Mondlane"></div>
+        <div class="fg"><label>Login (sem espaços) *</label><input type="text" id="u-login" placeholder="ex: fatima.mondlane"></div>
+        <div class="fg"><label>Papel *</label>
+          <select id="u-papel" onchange="updateRoleHint()">
+            <option value="">— seleccionar —</option>
+            <option value="assistente">Assistente</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="admin">Administrador</option>
+            <option value="leitura">Só leitura</option>
+          </select>
+        </div>
+        <div class="fg"><label>PIN inicial (4 dígitos) *</label><input type="password" id="u-pin" maxlength="4" placeholder="••••"></div>
+        <div class="fg"><label>Confirmar PIN *</label><input type="password" id="u-pin2" maxlength="4" placeholder="••••"></div>
+        <div class="fg"><label>Estado</label>
+          <select id="u-ativo"><option value="Sim">Activo</option><option value="Nao">Inactivo</option></select>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6" id="u-role-hint"></div>
+      <div class="err-box" id="u-err" style="margin-top:10px"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn danger" id="u-del-btn" onclick="deleteUser()" style="margin-right:auto;display:none">Remover</button>
+      <button class="btn" onclick="closeUserMD()">Cancelar</button>
+      <button class="btn primary" onclick="saveUser()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PIN -->
+<div class="overlay" id="pin-ov" onclick="if(event.target===this)document.getElementById('pin-ov').classList.remove('open')">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-hd"><h3>Alterar PIN</h3><button class="modal-x" onclick="document.getElementById('pin-ov').classList.remove('open')">×</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>PIN actual</label><input type="password" id="pin-old" maxlength="4" placeholder="••••"></div>
+      <div class="fg"><label>Novo PIN</label><input type="password" id="pin-new" maxlength="4" placeholder="••••"></div>
+      <div class="fg"><label>Confirmar novo PIN</label><input type="password" id="pin-conf" maxlength="4" placeholder="••••"></div>
+      <div class="err-box" id="pin-err"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="document.getElementById('pin-ov').classList.remove('open')">Cancelar</button>
+      <button class="btn primary" onclick="changePin()">Alterar PIN</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DADOS DEMO
+// ═══════════════════════════════════════════════
+let agents = [
+  {id:'AG-0001',sup:'Carlos Machava',loc:'Xipamanine',tipo:'Sunmi',op:'Mcel',imei:'358742091234560',sim:'840012345',mat:{barril:true,mpesa:false,premier:true,res:false,loto:true,quio:false,somb:'sim'}},
+  {id:'AG-0002',sup:'Carlos Machava',loc:'Malhangalene',tipo:'Telefone',op:'Vodacom',imei:'356789012345678',sim:'860987654',mat:{barril:false,mpesa:true,premier:false,res:true,loto:false,quio:true,somb:'nao'}},
+  {id:'AG-0003',sup:'Ana Sitoe',loc:'Costa do Sol',tipo:'Impressora + Telefone',op:'Movitel',imei:'351234567890123',sim:'870123456',mat:{barril:false,mpesa:false,premier:false,res:true,loto:true,quio:false,somb:'sim'}},
+  {id:'AG-0004',sup:'Ana Sitoe',loc:'Polana Caniço',tipo:'Sunmi',op:'Mcel',imei:'354567890123456',sim:'841234567',mat:{barril:true,mpesa:true,premier:false,res:false,loto:false,quio:true,somb:'nao'}},
+  {id:'AG-0005',sup:'João Tembe',loc:'Matola',tipo:'Aparelho pessoal',op:'Vodacom',imei:'',sim:'862345678',mat:{barril:false,mpesa:false,premier:true,res:false,loto:true,quio:true,somb:'sim'}},
+  {id:'AG-0006',sup:'João Tembe',loc:'Maxaquene',tipo:'Sunmi',op:'Mcel',imei:'357890123456789',sim:'843456789',mat:{barril:true,mpesa:false,premier:false,res:true,loto:false,quio:false,somb:'nao'}},
+  {id:'AG-0007',sup:'Maria Cumbe',loc:'KaTembe',tipo:'Telefone',op:'Movitel',imei:'350123456789012',sim:'874567890',mat:{barril:false,mpesa:true,premier:true,res:false,loto:true,quio:false,somb:'sim'}},
+  {id:'AG-0008',sup:'Pedro Nhambi',loc:'Hulene',tipo:'Sunmi',op:'Mcel',imei:'352345678901234',sim:'845678901',mat:{barril:true,mpesa:false,premier:false,res:true,loto:false,quio:true,somb:'nao'}},
+];
+
+let users = [
+  {login:'admin',         nome:'Administrador',  pin:'0000', papel:'admin',      ativo:'Sim'},
+  {login:'assistente',    nome:'Assistente',     pin:'2222', papel:'assistente', ativo:'Sim'},
+  {login:'Carlos Machava',nome:'Carlos Machava', pin:'1234', papel:'supervisor', ativo:'Sim'},
+  {login:'Ana Sitoe',     nome:'Ana Sitoe',      pin:'1234', papel:'supervisor', ativo:'Sim'},
+  {login:'João Tembe',    nome:'João Tembe',     pin:'1234', papel:'supervisor', ativo:'Sim'},
+  {login:'Maria Cumbe',   nome:'Maria Cumbe',    pin:'1234', papel:'supervisor', ativo:'Sim'},
+  {login:'Pedro Nhambi',  nome:'Pedro Nhambi',   pin:'1234', papel:'supervisor', ativo:'Sim'},
+];
+
+// ═══════════════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════════════
+let currentUser = null;
+let currentRole = null;
+let filterOp = '';
+let editId = null;
+let editUserLogin = null;
+let sheetUrl = localStorage.getItem('eb_sheet_url') || '';
+let sheetConnected = false;
+let refreshTimer = null;
+let lastActivity = Date.now();
+
+document.addEventListener('click',   () => lastActivity = Date.now());
+document.addEventListener('keydown', () => lastActivity = Date.now());
+
+// ═══════════════════════════════════════════════
+//  INIT — NÃO bloqueia o login em momento algum
+// ═══════════════════════════════════════════════
+window.onload = function() {
+  buildLoginSelect();           // mostrar utilizadores demo imediatamente
+  if (sheetUrl) {
+    document.getElementById('sheet-url').value = sheetUrl;
+    fetchUsersInBackground();   // tentar Sheet sem bloquear
+  }
+};
+
+// Preencher a lista de login com os utilizadores actuais
+function buildLoginSelect() {
+  const sel = document.getElementById('l-user');
+  // Manter só as primeiras 2 opções (em branco + admin fixo)
+  while (sel.options.length > 2) sel.remove(2);
+  const label = {assistente:'Assistente: ', supervisor:'Supervisor: ', leitura:'Leitura: '};
+  users
+    .filter(u => u.papel !== 'admin' && u.ativo === 'Sim')
+    .sort((a,b) => a.nome.localeCompare(b.nome))
+    .forEach(u => {
+      const o = new Option((label[u.papel]||'') + u.nome, u.login);
+      sel.add(o);
+    });
+}
+
+// Carregar utilizadores do Sheet em segundo plano (8s timeout)
+function fetchUsersInBackground() {
+  if (!sheetUrl) return;
+  const url = sheetUrl + '?' + new URLSearchParams({action:'getSupervisores'});
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), 8000);
+  fetch(url, {signal: ctrl.signal})
+    .then(r => r.json())
+    .then(res => {
+      clearTimeout(tid);
+      if (res && res.status === 'ok' && Array.isArray(res.data) && res.data.length) {
+        applySheetUsers(res.data);
+        sheetConnected = true;
+        setSyncOk();
+      }
+    })
+    .catch(() => { /* timeout ou erro — fica offline, sem bloquear */ });
+}
+
+function applySheetUsers(data) {
+  const pick = (obj, ...keys) => {
+    for (const k of keys) {
+      for (const v of [k, k.toLowerCase(), k[0].toUpperCase()+k.slice(1)]) {
+        if (obj[v] !== undefined && String(obj[v]).trim() !== '') return String(obj[v]).trim();
+      }
+    }
+    return '';
+  };
+  const adminLocal = users.find(u => u.login === 'admin') ||
+    {login:'admin', nome:'Administrador', pin:'0000', papel:'admin', ativo:'Sim'};
+  const sheetList = data
+    .map(u => ({
+      login: pick(u,'utilizador','login','Login','Utilizador'),
+      nome:  pick(u,'nome_display','nome','Nome'),
+      pin:   pick(u,'pin','PIN'),
+      papel: pick(u,'papel','Papel','role') || 'supervisor',
+      ativo: pick(u,'ativo','Ativo','active') || 'Sim'
+    }))
+    .filter(u => u.login && u.login !== 'admin');
+  users = [adminLocal, ...sheetList];
+  buildLoginSelect();
+}
+
+function setSyncOk() {
+  document.getElementById('sync-dot').className = 'dot ok';
+  document.getElementById('sync-lbl').textContent = 'Google Sheets: ligado · ' + new Date().toLocaleTimeString('pt');
+  const rb = document.getElementById('refresh-btn');
+  if (rb) rb.style.display = '';
+}
+
+// ═══════════════════════════════════════════════
+//  GOOGLE SHEETS
+// ═══════════════════════════════════════════════
+async function sheetGet(params) {
+  try {
+    const r = await fetch(sheetUrl + '?' + new URLSearchParams(params));
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+async function sheetPost(body) {
+  try {
+    await fetch(sheetUrl, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify(body)
+    });
+  } catch(e) {}
+}
+
+async function configSheet() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url || !url.startsWith('https://')) { showToast('URL inválido.','err'); return; }
+  sheetUrl = url;
+  localStorage.setItem('eb_sheet_url', url);
+  document.getElementById('sync-dot').className = 'dot busy';
+  document.getElementById('sync-lbl').textContent = 'A testar ligação...';
+  const res = await sheetGet({action:'getSupervisores'});
+  if (res && res.status === 'ok') {
+    sheetConnected = true;
+    setSyncOk();
+    showToast('Google Sheets ligado!');
+    if (res.data && res.data.length) applySheetUsers(res.data);
+    await loadAgentsFromSheet();
+  } else {
+    document.getElementById('sync-dot').className = 'dot';
+    document.getElementById('sync-lbl').textContent = 'Erro de ligação (modo offline activo)';
+    showToast('Não foi possível ligar. Verifique o URL.','err');
+  }
+}
+
+async function loadAgentsFromSheet() {
+  if (!sheetConnected) return;
+  const res = await sheetGet({action:'getAgentes', user:currentUser, role:currentRole});
+  if (res && res.status === 'ok' && Array.isArray(res.data)) {
+    agents = res.data.map(r => ({
+      id: r.ID_Agente||r['ID Agente']||'', sup: r.Supervisor||'', loc: r.Localizacao||r['Localização']||'',
+      tipo: r.Tipo_Aparelho||r['Tipo Aparelho']||'', op: r.Operadora||'', imei: r.IMEI||'', sim: r.Num_SIM||r['Nº SIM']||'',
+      mat:{
+        barril:  r.Barril==='Sim', mpesa: r.Balcao_Mpesa==='Sim', premier: r.Balcao_Premier==='Sim',
+        res:     r.Placa_Resultado==='Sim', loto: r.Placa_LotoFoot==='Sim', quio: r.Placa_Quiosque==='Sim',
+        somb:    r.Sombra==='Sim' ? 'sim' : 'nao'
+      }
+    }));
+    refreshAll();
+    setSyncOk();
+  }
+}
+
+async function manualRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  btn.textContent='↻ A actualizar...'; btn.disabled=true;
+  if (sheetConnected) {
+    await loadAgentsFromSheet();
+    const res = await sheetGet({action:'getSupervisores'});
+    if (res && res.status==='ok' && res.data) applySheetUsers(res.data);
+    renderUtilizadores();
+  }
+  btn.textContent='↻ Actualizar agora'; btn.disabled=false;
+  showToast('Dados actualizados!');
+}
+
+function startAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(async () => {
+    if (!sheetConnected || !currentUser) return;
+    if (document.querySelector('.overlay.open')) return;
+    if (Date.now() - lastActivity < 10000) return;
+    await loadAgentsFromSheet();
+    const res = await sheetGet({action:'getSupervisores'});
+    if (res && res.status==='ok' && res.data) { applySheetUsers(res.data); renderUtilizadores(); }
+  }, 60000);
+}
+
+// ═══════════════════════════════════════════════
+//  AUTENTICAÇÃO
+// ═══════════════════════════════════════════════
+async function doLogin() {
+  const user = document.getElementById('l-user').value;
+  const pin  = document.getElementById('l-pin').value;
+  const err  = document.getElementById('l-err');
+  const btn  = document.getElementById('l-btn');
+  err.classList.remove('show');
+
+  if (!user) { err.textContent='Seleccione um utilizador.'; err.classList.add('show'); return; }
+  if (!pin)  { err.textContent='Introduza o PIN.';          err.classList.add('show'); return; }
+
+  // Admin: sempre local (nunca vai ao Sheet)
+  if (user === 'admin') {
+    const a = users.find(u => u.login === 'admin');
+    if (a && a.pin === pin) { loginSuccess('admin', 'admin', 'Administrador'); return; }
+    err.textContent = 'PIN incorrecto.'; err.classList.add('show'); return;
+  }
+
+  // Outros: tentar Sheet se ligado, senão local
+  if (sheetConnected) {
+    btn.textContent='A verificar...'; btn.disabled=true;
+    try {
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 6000);
+      const r    = await fetch(sheetUrl+'?'+new URLSearchParams({action:'login',utilizador:user,pin}), {signal:ctrl.signal});
+      clearTimeout(tid);
+      const res  = await r.json();
+      btn.textContent='Entrar'; btn.disabled=false;
+      if (res && res.status==='ok') { loginSuccess(user, res.papel, res.nome); return; }
+      err.textContent = res?.message || 'PIN incorrecto.'; err.classList.add('show'); return;
+    } catch(e) {
+      btn.textContent='Entrar'; btn.disabled=false;
+      // Sheet inacessível — fallback local
+    }
+  }
+
+  // Fallback local
+  const u = users.find(x => x.login===user && x.ativo==='Sim');
+  if (!u || u.pin !== pin) { err.textContent='Utilizador ou PIN incorrecto.'; err.classList.add('show'); return; }
+  loginSuccess(user, u.papel, u.nome);
+}
+
+function loginSuccess(user, role, nome) {
+  currentUser = user; currentRole = role;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('u-name').textContent = nome || user;
+  const rl = {admin:'Admin',assistente:'Assistente',supervisor:'Supervisor',leitura:'Leitura'};
+  document.getElementById('u-role').textContent = rl[role] || role;
+  const sub = {admin:'Maputo · Acesso total', assistente:'Maputo · Gestão de agentes', leitura:'Maputo · Só leitura', supervisor:'Maputo · Apenas os seus agentes'};
+  document.getElementById('topbar-sub').textContent = sub[role] || 'Maputo';
+
+  // Visibilidade por papel
+  const isAdmin = role === 'admin';
+  document.getElementById('tab-sup-btn').style.display   = isAdmin ? '' : 'none';
+  document.getElementById('tab-util-btn').style.display  = isAdmin ? '' : 'none';
+  document.getElementById('tab-guia-btn').style.display  = isAdmin ? '' : 'none';
+  document.getElementById('sync-admin-area').style.display = isAdmin ? 'flex' : 'none';
+
+  // Carregar Sheet se ligado
+  if (sheetConnected) {
+    loadAgentsFromSheet();
+  } else if (sheetUrl) {
+    // Tentar ligar silenciosamente após login
+    fetchUsersInBackground();
+    setTimeout(() => { if (sheetConnected) loadAgentsFromSheet(); }, 3000);
+  }
+
+  refreshAll();
+  showTab('dashboard');
+  startAutoRefresh();
+}
+
+function logout() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  currentUser = null; currentRole = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('l-user').value = '';
+  document.getElementById('l-pin').value  = '';
+}
+
+// ═══════════════════════════════════════════════
+//  PIN
+// ═══════════════════════════════════════════════
+function showPinModal() {
+  ['pin-old','pin-new','pin-conf'].forEach(i => document.getElementById(i).value='');
+  document.getElementById('pin-err').classList.remove('show');
+  document.getElementById('pin-ov').classList.add('open');
+}
+
+async function changePin() {
+  const old_ = document.getElementById('pin-old').value;
+  const novo  = document.getElementById('pin-new').value;
+  const conf  = document.getElementById('pin-conf').value;
+  const errEl = document.getElementById('pin-err');
+  errEl.classList.remove('show');
+  if (!old_||!novo||!conf){ errEl.textContent='Preencha todos os campos.'; errEl.classList.add('show'); return; }
+  if (!/^\d{4}$/.test(novo)){ errEl.textContent='PIN deve ter 4 dígitos.'; errEl.classList.add('show'); return; }
+  if (novo!==conf){ errEl.textContent='Os PINs não coincidem.'; errEl.classList.add('show'); return; }
+  if (sheetConnected) {
+    await sheetPost({action:'updatePin', utilizador:currentUser, pinAntigo:old_, pinNovo:novo});
+  }
+  const u = users.find(x => x.login===currentUser);
+  if (u){ if(u.pin!==old_){ errEl.textContent='PIN actual incorrecto.'; errEl.classList.add('show'); return; } u.pin=novo; }
+  document.getElementById('pin-ov').classList.remove('open');
+  showToast('PIN alterado com sucesso!');
+}
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function vis() {
+  if (['admin','assistente','leitura'].includes(currentRole)) return agents;
+  return agents.filter(a => a.sup === currentUser);
+}
+const canEdit = () => ['admin','assistente','supervisor'].includes(currentRole);
+
+const bTipo = t => { const m={'Sunmi':'b-sunmi','Telefone':'b-tel','Impressora + Telefone':'b-imp','Aparelho pessoal':'b-pes'}; return `<span class="badge ${m[t]||''}">${t}</span>`; };
+const bOp   = o => { const m={'Mcel':'b-mcel','Vodacom':'b-voda','Movitel':'b-movi'}; return o?`<span class="badge ${m[o]||''}">${o}</span>`:'<span style="color:var(--text3)">—</span>'; };
+const tick  = v => v ? '<span class="tick-y">✓</span>' : '<span class="tick-n">—</span>';
+
+const papelBadge = {
+  admin:      '<span class="badge" style="background:#FAEEDA;color:#633806">Admin</span>',
+  assistente: '<span class="badge" style="background:#fdeef6;color:#8c1050">Assistente</span>',
+  supervisor: '<span class="badge" style="background:#EAF3DE;color:#27500A">Supervisor</span>',
+  leitura:    '<span class="badge" style="background:#eaeefc;color:#162c6e">Leitura</span>'
+};
+
+// ═══════════════════════════════════════════════
+//  RENDERS
+// ═══════════════════════════════════════════════
+function updateStats() {
+  const list = vis();
+  document.getElementById('st-tot').textContent   = list.length;
+  document.getElementById('st-sub').textContent   = currentRole==='admin'?'Maputo cidade':'Os seus agentes';
+  document.getElementById('st-sup').textContent   = new Set(list.map(a=>a.sup)).size;
+  document.getElementById('st-sunmi').textContent = list.filter(a=>a.tipo==='Sunmi').length;
+  document.getElementById('st-imp').textContent   = list.filter(a=>a.tipo==='Impressora + Telefone').length;
+  document.getElementById('st-tel').textContent   = list.filter(a=>a.tipo==='Telefone').length;
+  document.getElementById('st-pes').textContent   = list.filter(a=>a.tipo==='Aparelho pessoal').length;
+  const rec = [...list].slice(-5).reverse();
+  document.getElementById('rec-info').textContent = rec.length + ' de ' + list.length;
+  document.getElementById('rec-body').innerHTML   = rec.map(a=>`<tr><td style="font-weight:600">${a.id}</td><td>${a.sup}</td><td>${bTipo(a.tipo)}</td><td>${a.loc}</td><td>${bOp(a.op)}</td></tr>`).join('');
+  document.querySelectorAll('.btn-add').forEach(b => b.style.display = canEdit() ? '' : 'none');
+}
+
+function getFiltered() {
+  const s   = (document.getElementById('s-ag')||{}).value?.toLowerCase()||'';
+  const sup = (document.getElementById('f-sup')||{}).value||'';
+  const tip = (document.getElementById('f-tipo')||{}).value||'';
+  return vis().filter(a =>
+    (!s   || a.id.toLowerCase().includes(s)||a.sup.toLowerCase().includes(s)||a.loc.toLowerCase().includes(s)) &&
+    (!sup || a.sup===sup) && (!tip||a.tipo===tip) && (!filterOp||a.op===filterOp)
+  );
+}
+
+function renderAgentes() {
+  const list = getFiltered();
+  document.getElementById('ag-ct').textContent = list.length + ' agentes';
+  const b = document.getElementById('ag-body');
+  if (!list.length) { b.innerHTML='<tr><td colspan="8" class="empty">Nenhum agente encontrado</td></tr>'; return; }
+  b.innerHTML = list.map(a => `<tr>
+    <td style="font-weight:600">${a.id}</td><td>${a.sup}</td><td>${bTipo(a.tipo)}</td><td>${a.loc}</td>
+    <td class="mono">${a.imei||'—'}</td><td class="mono">${a.sim||'—'}</td><td>${bOp(a.op)}</td>
+    <td>${canEdit()?`<button class="btn sm" onclick="openModal('edit','${a.id}')">Editar</button>`:''}</td>
+  </tr>`).join('');
+}
+
+function renderAparelhos() {
+  const s   = (document.getElementById('s-imei')||{}).value?.toLowerCase()||'';
+  const tip = (document.getElementById('f-tipo2')||{}).value||'';
+  const list = vis().filter(a=>(!s||a.imei.toLowerCase().includes(s)||a.sim.toLowerCase().includes(s))&&(!tip||a.tipo===tip));
+  document.getElementById('ap-ct').textContent = list.length + ' aparelhos';
+  const b = document.getElementById('ap-body');
+  if (!list.length) { b.innerHTML='<tr><td colspan="6" class="empty">Nenhum resultado</td></tr>'; return; }
+  b.innerHTML = list.map(a=>`<tr><td style="font-weight:600">${a.id}</td><td>${bTipo(a.tipo)}</td><td class="mono">${a.imei||'—'}</td><td class="mono">${a.sim||'—'}</td><td>${bOp(a.op)}</td><td>${a.loc}</td></tr>`).join('');
+}
+
+function renderMaterial() {
+  const s   = (document.getElementById('s-mat')||{}).value?.toLowerCase()||'';
+  const sup = (document.getElementById('f-sup-mat')||{}).value||'';
+  const list= vis().filter(a=>(!s||a.id.toLowerCase().includes(s)||a.loc.toLowerCase().includes(s))&&(!sup||a.sup===sup));
+  const b   = document.getElementById('mat-body');
+  if (!list.length) { b.innerHTML='<tr><td colspan="10" class="empty">Nenhum resultado</td></tr>'; return; }
+  b.innerHTML = list.map(a=>`<tr>
+    <td style="font-weight:600">${a.id}</td><td>${a.sup}</td><td>${a.loc}</td>
+    ${['barril','mpesa','premier','res','loto','quio'].map(k=>`<td style="text-align:center">${tick(a.mat[k])}</td>`).join('')}
+    <td style="text-align:center">${a.mat.somb==='sim'?'<span class="tick-y">✓</span>':'<span class="tick-n">—</span>'}</td>
+  </tr>`).join('');
+}
+
+function renderSupervisores() {
+  const sups = {};
+  vis().forEach(a=>{ if(!sups[a.sup]) sups[a.sup]=[]; sups[a.sup].push(a); });
+  const keys = Object.keys(sups).sort();
+  document.getElementById('sup-ct').textContent = keys.length + ' supervisores';
+  const max = Math.max(...keys.map(k=>sups[k].length), 1);
+  document.getElementById('sup-grid').innerHTML = keys.map(k => {
+    const l=sups[k]; const locs=[...new Set(l.map(a=>a.loc))];
+    return `<div class="sup-card" onclick="filterBySup('${k}')">
+      <div class="s-name">${k}</div>
+      <div class="s-info">${l.length} agente${l.length!==1?'s':''}</div>
+      <div class="s-info">${locs.slice(0,2).join(', ')}${locs.length>2?' ...':''}</div>
+      <div class="s-bar"><div class="s-fill" style="width:${Math.round(l.length/max*100)}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderUtilizadores() {
+  document.getElementById('util-ct').textContent = users.length + ' utilizadores';
+  const b = document.getElementById('util-body');
+  b.innerHTML = users.map(u => {
+    const cnt = u.papel==='supervisor' ? agents.filter(a=>a.sup===u.login).length : '—';
+    const atv = u.ativo==='Sim'
+      ? '<span class="badge" style="background:#E1F5EE;color:#085041">Activo</span>'
+      : '<span class="badge" style="background:#f1efe8;color:#444441">Inactivo</span>';
+    return `<tr>
+      <td style="font-weight:600;font-size:12px;font-family:monospace">${u.login}</td>
+      <td>${u.nome}</td>
+      <td>${papelBadge[u.papel]||u.papel}</td>
+      <td>${atv}</td>
+      <td style="text-align:center;color:var(--text2)">${cnt}</td>
+      <td>${u.login==='admin'?'<span style="font-size:11px;color:var(--text3)">protegido</span>':`<button class="btn sm" onclick="openUserModal('edit','${u.login}')">Editar</button>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPreview() {
+  const sup = (document.getElementById('exp-sup')||{}).value||'';
+  const tip = (document.getElementById('exp-tipo')||{}).value||'';
+  const op  = (document.getElementById('exp-op')||{}).value||'';
+  const list = vis().filter(a=>(!sup||a.sup===sup)&&(!tip||a.tipo===tip)&&(!op||a.op===op)).slice(0,5);
+  document.getElementById('prev-body').innerHTML = list.map(a=>`<tr><td style="font-weight:600">${a.id}</td><td>${a.sup}</td><td>${bTipo(a.tipo)}</td><td>${a.loc}</td><td class="mono">${a.imei||'—'}</td><td class="mono">${a.sim||'—'}</td><td>${bOp(a.op)}</td></tr>`).join('');
+}
+
+function updateSelects() {
+  const sups = [...new Set(agents.map(a=>a.sup))].sort();
+  ['f-sup','f-sup-mat','exp-sup'].forEach(id => {
+    const el = document.getElementById(id); if(!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">Todos supervisores</option>' + sups.map(s=>`<option${s===cur?' selected':''}>${s}</option>`).join('');
+  });
+}
+
+function filterBySup(s){ document.getElementById('f-sup').value=s; showTab('agentes'); renderAgentes(); }
+function setOp(el,v){ document.querySelectorAll('#op-chips .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); filterOp=v; renderAgentes(); }
+
+function refreshAll() { updateSelects(); updateStats(); renderAgentes(); renderAparelhos(); renderMaterial(); renderSupervisores(); renderUtilizadores(); renderPreview(); }
+
+// ═══════════════════════════════════════════════
+//  EXPORTAR CSV
+// ═══════════════════════════════════════════════
+function exportCSV(tipo) {
+  const sup = document.getElementById('exp-sup').value;
+  const tip = document.getElementById('exp-tipo').value;
+  const op  = document.getElementById('exp-op').value;
+  const list = vis().filter(a=>(!sup||a.sup===sup)&&(!tip||a.tipo===tip)&&(!op||a.op===op));
+  if (!list.length) { showToast('Sem dados para exportar.','err'); return; }
+  let headers, rows;
+  if (tipo==='agentes') {
+    headers = ['ID_Agente','Supervisor','Localizacao','Tipo_Aparelho','Operadora','IMEI','Num_SIM'];
+    rows    = list.map(a=>[a.id,a.sup,a.loc,a.tipo,a.op,a.imei,a.sim]);
+  } else if (tipo==='aparelhos') {
+    headers = ['ID_Agente','Tipo_Aparelho','IMEI','Num_SIM','Operadora','Localizacao'];
+    rows    = list.map(a=>[a.id,a.tipo,a.imei,a.sim,a.op,a.loc]);
+  } else {
+    headers = ['ID_Agente','Supervisor','Localizacao','Barril','Balcao_Mpesa','Balcao_Premier','Placa_Resultado','Placa_LotoFoot','Placa_Quiosque','Sombra'];
+    rows    = list.map(a=>[a.id,a.sup,a.loc,a.mat.barril?'Sim':'Não',a.mat.mpesa?'Sim':'Não',a.mat.premier?'Sim':'Não',a.mat.res?'Sim':'Não',a.mat.loto?'Sim':'Não',a.mat.quio?'Sim':'Não',a.mat.somb==='sim'?'Sim':'Não']);
+  }
+  const csv = '\uFEFF' + [headers,...rows].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a   = document.createElement('a');
+  a.href    = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download= `ElephantBet_${tipo}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('CSV exportado!');
+}
+
+// ═══════════════════════════════════════════════
+//  MODAL AGENTE
+// ═══════════════════════════════════════════════
+function openModal(mode, id) {
+  editId = null;
+  ['f-id','f-sup-in','f-loc','f-imei','f-sim'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f-tipo-in').value=''; document.getElementById('f-op').value='';
+  ['m-barril','m-mpesa','m-premier','m-res','m-loto','m-quio'].forEach(i=>document.getElementById(i).checked=false);
+  document.getElementById('m-somb-nao').checked=true;
+
+  if (mode==='edit' && id) {
+    const a = agents.find(x=>x.id===id); if(!a) return;
+    editId = id;
+    document.getElementById('modal-title').textContent = 'Editar Agente — '+id;
+    document.getElementById('f-id').value=a.id; document.getElementById('f-id').disabled=true;
+    document.getElementById('f-sup-in').value=a.sup; document.getElementById('f-loc').value=a.loc;
+    document.getElementById('f-tipo-in').value=a.tipo; document.getElementById('f-op').value=a.op;
+    document.getElementById('f-imei').value=a.imei; document.getElementById('f-sim').value=a.sim;
+    ['barril','mpesa','premier','res','loto','quio'].forEach(k=>document.getElementById('m-'+k).checked=a.mat[k]);
+    document.getElementById(a.mat.somb==='sim'?'m-somb-sim':'m-somb-nao').checked=true;
+  } else {
+    document.getElementById('modal-title').textContent='Registar Agente';
+    document.getElementById('f-id').disabled=false;
+    if (currentRole==='supervisor') document.getElementById('f-sup-in').value=currentUser;
+  }
+  document.getElementById('modal-ov').classList.add('open');
+}
+
+function closeMD() { document.getElementById('modal-ov').classList.remove('open'); document.getElementById('f-id').disabled=false; }
+
+async function saveAgent() {
+  const id  = document.getElementById('f-id').value.trim();
+  const sup = document.getElementById('f-sup-in').value.trim();
+  const loc = document.getElementById('f-loc').value.trim();
+  const tip = document.getElementById('f-tipo-in').value;
+  if (!id||!sup||!loc||!tip) { showToast('Preencha os campos obrigatórios (*).','err'); return; }
+
+  const mat = {
+    barril:  document.getElementById('m-barril').checked,
+    mpesa:   document.getElementById('m-mpesa').checked,
+    premier: document.getElementById('m-premier').checked,
+    res:     document.getElementById('m-res').checked,
+    loto:    document.getElementById('m-loto').checked,
+    quio:    document.getElementById('m-quio').checked,
+    somb:    document.getElementById('m-somb-sim').checked ? 'sim' : 'nao'
+  };
+  const data = {id, sup, loc, tipo:tip, op:document.getElementById('f-op').value, imei:document.getElementById('f-imei').value.trim(), sim:document.getElementById('f-sim').value.trim(), mat};
+
+  const isEdit = !!editId;
+  if (isEdit) {
+    const idx = agents.findIndex(a=>a.id===editId); if(idx!==-1) agents[idx]=data;
+  } else {
+    if (agents.find(a=>a.id===id)) { showToast('ID '+id+' já existe.','err'); return; }
+    agents.push(data);
+  }
+
+  closeMD(); refreshAll(); showTab(isEdit?'agentes':'dashboard');
+  showToast(isEdit?'Agente '+id+' actualizado!':'Agente '+id+' registado!');
+
+  if (sheetConnected) {
+    const payload = {
+      ID_Agente:id, Supervisor:sup, Localizacao:loc, Tipo_Aparelho:tip,
+      Operadora:data.op, IMEI:data.imei, Num_SIM:data.sim,
+      Barril:mat.barril?'Sim':'Não', Balcao_Mpesa:mat.mpesa?'Sim':'Não', Balcao_Premier:mat.premier?'Sim':'Não',
+      Placa_Resultado:mat.res?'Sim':'Não', Placa_LotoFoot:mat.loto?'Sim':'Não', Placa_Quiosque:mat.quio?'Sim':'Não',
+      Sombra:mat.somb==='sim'?'Sim':'Não'
+    };
+    sheetPost({action:isEdit?'updateAgente':'addAgente', agente:payload, utilizador:currentUser});
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  MODAL UTILIZADOR
+// ═══════════════════════════════════════════════
+function openUserModal(mode, login) {
+  editUserLogin = null;
+  ['u-nome','u-login','u-pin','u-pin2'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('u-papel').value=''; document.getElementById('u-ativo').value='Sim';
+  document.getElementById('u-err').classList.remove('show');
+  document.getElementById('u-del-btn').style.display='none';
+  document.getElementById('u-login').disabled=false;
+  document.getElementById('u-pin').placeholder='••••';
+  document.getElementById('u-pin2').placeholder='••••';
+
+  if (mode==='edit' && login) {
+    const u=users.find(x=>x.login===login); if(!u) return;
+    editUserLogin=login;
+    document.getElementById('user-modal-title').textContent='Editar Utilizador';
+    document.getElementById('u-nome').value=u.nome; document.getElementById('u-login').value=u.login;
+    document.getElementById('u-login').disabled=true; document.getElementById('u-papel').value=u.papel;
+    document.getElementById('u-ativo').value=u.ativo; document.getElementById('u-del-btn').style.display='';
+    document.getElementById('u-pin').placeholder='(vazio = manter PIN actual)';
+    document.getElementById('u-pin2').placeholder='(vazio = manter PIN actual)';
+  } else {
+    document.getElementById('user-modal-title').textContent='Novo Utilizador';
+  }
+  updateRoleHint();
+  document.getElementById('user-ov').classList.add('open');
+}
+
+function closeUserMD() { document.getElementById('user-ov').classList.remove('open'); document.getElementById('u-login').disabled=false; }
+
+function updateRoleHint() {
+  const p = document.getElementById('u-papel').value;
+  const h = {
+    admin:      'Acesso total — gere agentes, utilizadores e configurações.',
+    assistente: 'Pode adicionar e editar todos os agentes. Não gere utilizadores.',
+    supervisor: 'Vê e edita apenas os agentes com o seu nome associado.',
+    leitura:    'Consulta todos os dados mas não pode editar.'
+  };
+  document.getElementById('u-role-hint').textContent = h[p] || 'Seleccione um papel.';
+}
+
+async function saveUser() {
+  const nome  = document.getElementById('u-nome').value.trim();
+  const login = document.getElementById('u-login').value.trim();
+  const papel = document.getElementById('u-papel').value;
+  const pin   = document.getElementById('u-pin').value;
+  const pin2  = document.getElementById('u-pin2').value;
+  const ativo = document.getElementById('u-ativo').value;
+  const errEl = document.getElementById('u-err');
+  errEl.classList.remove('show');
+
+  if (!nome||!login||!papel) { errEl.textContent='Preencha nome, login e papel.'; errEl.classList.add('show'); return; }
+  if (login.includes(' ')) { errEl.textContent='Login não pode ter espaços.'; errEl.classList.add('show'); return; }
+  if (!editUserLogin && !pin) { errEl.textContent='Defina um PIN.'; errEl.classList.add('show'); return; }
+  if (pin) {
+    if (!/^\d{4}$/.test(pin)) { errEl.textContent='PIN deve ter 4 dígitos.'; errEl.classList.add('show'); return; }
+    if (pin!==pin2) { errEl.textContent='Os PINs não coincidem.'; errEl.classList.add('show'); return; }
+  }
+  if (!editUserLogin && users.find(u=>u.login===login)) { errEl.textContent='Login "'+login+'" já existe.'; errEl.classList.add('show'); return; }
+
+  const pinFinal = pin || (users.find(u=>u.login===editUserLogin)||{}).pin || '';
+  const userData = {login, nome, pin:pinFinal, papel, ativo};
+
+  if (editUserLogin) {
+    const idx=users.findIndex(u=>u.login===editUserLogin); if(idx!==-1) users[idx]=userData;
+  } else {
+    users.push(userData);
+  }
+
+  if (sheetConnected) sheetPost({action:editUserLogin?'updateUtilizador':'addUtilizador', utilizadorData:userData, utilizador:currentUser});
+
+  closeUserMD(); buildLoginSelect(); renderUtilizadores();
+  showToast(editUserLogin?'Utilizador actualizado!':'Utilizador "'+nome+'" criado! PIN: '+pin);
+}
+
+async function deleteUser() {
+  if (!editUserLogin) return;
+  const u=users.find(x=>x.login===editUserLogin); if(!u) return;
+  if (!confirm('Remover "'+u.nome+'"? Esta acção não pode ser desfeita.')) return;
+  users=users.filter(x=>x.login!==editUserLogin);
+  if (sheetConnected) sheetPost({action:'deleteUtilizador', id:editUserLogin, utilizador:currentUser});
+  closeUserMD(); buildLoginSelect(); renderUtilizadores();
+  showToast('Utilizador removido.');
+}
+
+// ═══════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════
+function showTab(tab) {
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const el=document.getElementById('tab-'+tab); if(el) el.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>{ if(t.getAttribute('onclick')?.includes("'"+tab+"'")) t.classList.add('active'); });
+  if(tab==='agentes')     { updateSelects(); renderAgentes(); }
+  if(tab==='aparelhos')   renderAparelhos();
+  if(tab==='material')    { updateSelects(); renderMaterial(); }
+  if(tab==='supervisores') renderSupervisores();
+  if(tab==='utilizadores') renderUtilizadores();
+  if(tab==='exportar')    { updateSelects(); renderPreview(); }
+  if(tab==='dashboard')   updateStats();
+}
+
+// ═══════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════
+function showToast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
